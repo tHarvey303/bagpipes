@@ -7,11 +7,8 @@ try:
 except KeyError:
     use_bpass = False
 
-if use_bpass:
-    print('Setup to use BPASS')
-    from .. import config_bpass as config
-else:
-    from .. import config
+
+from .. import config
 
 
 from .. import utils
@@ -50,6 +47,8 @@ class stellar(object):
                                                    raw_grid[j, :],
                                                    left=0., right=0.)
 
+        print(np.sum(grid_raw_ages), grid_raw_ages.shape)
+
         return grid_raw_ages
 
     def _resample_in_age(self, grid_raw_ages):
@@ -78,7 +77,6 @@ class stellar(object):
 
         # Loop over the new age bins
         for j in range(config.age_bins.shape[0] - 1):
-
             # Find the first raw bin partially covered by the new bin
             while raw_age_lhs[start + 1] <= config.age_bins[j]:
                 start += 1

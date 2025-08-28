@@ -5,8 +5,8 @@ import numpy as np
 
 from astropy.io import fits
 
-from .utils import *
-from .models.making import igm_inoue2014
+from ..utils import *
+from ..making import igm_inoue2014
 
 """ This file contains all of the configuration variables for Bagpipes.
 This includes loading different grids of models into the code, and the
@@ -122,6 +122,9 @@ try:
     # Grid of nebular continuum fluxes.
     cont_grid = [fits.open(grid_dir + "/" + neb_cont_file)[i].data for
                  i in range(len(metallicities) * len(logU) + 1)]
+    print(np.sum(cont_grid[1:]))
+
+                 
 except IOError:
     print("Failed to load nebular grids, these should be placed in the"
           + " bagpipes/models/grids/ directory.")

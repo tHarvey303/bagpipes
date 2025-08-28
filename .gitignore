@@ -1,6 +1,11 @@
 bagpipes/models/grids/*.fits
+bagpipes/models/grids/*.txt
+!bagipes/models/grids/cloudy_lines.txt
+!bagpipes/models/grids/cloudy_linewavs.txt
 ancillary_code/*
 examples/*
+bagpipes/configs/config_*.py
+!bagpipes/configs/config_bpass.py
 
 #################################
 

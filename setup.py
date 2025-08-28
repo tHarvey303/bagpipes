@@ -19,7 +19,7 @@ setup(
 
     url='https://bagpipes.readthedocs.io',
 
-    author='Adam Carnall',
+    author='Adam Carnall, modified by Tom Harvey and Duncan Austin',
 
     author_email='adamc@roe.ac.uk',
 
@@ -35,7 +35,7 @@ setup(
 
     project_urls={
         "readthedocs": "https://bagpipes.readthedocs.io",
-        "GitHub": "https://github.com/ACCarnall/bagpipes",
+        "GitHub": "https://github.com/tHarvey303/bagpipes",
         "ArXiv": "https://arxiv.org/abs/1712.04452"
     }
 )

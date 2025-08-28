@@ -5,8 +5,8 @@ import numpy as np
 
 from astropy.io import fits
 
-from .utils import *
-from .models.making import igm_inoue2014
+from ..utils import *
+from ..making import igm_inoue2014
 
 """ This file contains all of the configuration variables for Bagpipes.
 This includes loading different grids of models into the code, and the

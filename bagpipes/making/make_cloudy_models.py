@@ -12,11 +12,7 @@ try:
 except KeyError:
     use_bpass = False
 
-if use_bpass:
-    print('Setup to use BPASS')
-    from ... import config_bpass as config
-else:
-    from ... import config
+from ... import config
 
 
 from ..model_galaxy import model_galaxy

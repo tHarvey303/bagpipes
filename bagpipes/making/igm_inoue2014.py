@@ -9,7 +9,7 @@ from astropy.io import fits
 to generate the IGM absorption table which is subsequently used for
 all IGM calculations. """
 
-path = os.path.dirname(os.path.realpath(__file__)) + "/../grids"
+path = os.path.dirname(os.path.realpath(__file__)) + "/../models/grids"
 coefs = np.loadtxt(path + "/lyman_series_coefs_inoue_2014_table2.txt")
 
 

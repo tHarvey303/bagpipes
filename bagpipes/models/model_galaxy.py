@@ -13,16 +13,7 @@ import astropy.constants as const
 import os
 from .. import utils
 
-try:
-    use_bpass = bool(int(os.environ['use_bpass']))
-except KeyError:
-    use_bpass = False
-
-if use_bpass:
-    print('Setup to use BPASS')
-    from .. import config_bpass as config
-else:
-    from .. import config
+from .. import config
 
 from .. import filters
 from .. import plotting
@@ -134,14 +125,9 @@ class model_galaxy(object):
         except KeyError:
             use_bpass = False
 
-        if use_bpass:
-            print('Setup to use BPASS')
-            from .. import config_bpass as config
-        else:
-            from .. import config as config
 
-        importlib.reload(config)
-        
+        from .. import config
+
         if model_components["redshift"] > config.max_redshift:
             raise ValueError("Bagpipes attempted to create a model with too "
                              "high redshift. Please increase max_redshift in "
@@ -741,7 +727,13 @@ class model_galaxy(object):
                     line_dict_name = line
                 else:
                     raise ValueError("The line %s is not in the lines_dict and not in the full dictionary" % line)
-            line_flux = np.array([getattr(self, f"line_fluxes_dustcorr_{frame}")[line_dict_name]])
+            arr = getattr(self, f"line_fluxes_dustcorr_{frame}")
+            if line_dict_name in arr:
+                flux = arr[line_dict_name]
+            else:
+                line_dict_name = utils.alt_lines_dict.get(line, False)
+                flux = arr[line_dict_name]
+            line_flux = np.array([flux])
             line_name = f"{line}_flux_{frame}"
             setattr(self, line_name, line_flux)
             line_names.append(line_name)
@@ -770,7 +762,13 @@ class model_galaxy(object):
             else:
                 raise ValueError("The line %s is not in the lines_dict" % line)
 
-            line_flux = getattr(self, f"line_fluxes_dustcorr_{frame}")[utils.lines_dict[line]]
+            arr = getattr(self, f"line_fluxes_dustcorr_{frame}")
+            if line_key in arr:
+                flux = arr[line_key]
+            else:
+                line_key = utils.alt_lines_dict.get(line, False)
+                flux = arr[line_key]
+            line_flux = np.array([flux])
             line_index = abs(self.wavelengths - line_wav).argmin()
             f_cont_line = dustcorr_cont_spectrum[line_index] # observed frame f_lambda
             
@@ -802,9 +800,30 @@ class model_galaxy(object):
         for line_ratio in line_ratios:
             assert line_ratio.count("__") == 1, "Line ratios must contain a single '__'"
             lines_a = line_ratio.split("__")[0].split("+")
-            line_fluxes_a = np.sum([line_fluxes[utils.lines_dict[line]] for line in lines_a])
+
+            line_fluxes_a = []
+            for line in lines_a:
+                if line in utils.lines_dict:
+                    flux = line_fluxes[utils.lines_dict[line]]
+                else:
+                    line = utils.alt_lines_dict.get(line, False)
+                    if not line:
+                        raise ValueError("The line %s is not in the lines_dict or alt_lines_dict" % line)
+                    flux = line_fluxes[line]
+                line_fluxes_a.append(flux)
+            line_fluxes_a = np.sum(line_fluxes_a)
             lines_b = line_ratio.split("__")[1].split("+")
-            line_fluxes_b = np.sum([line_fluxes[utils.lines_dict[line]] for line in lines_b])
+            line_fluxes_b = []
+            for line in lines_b:
+                if line in utils.lines_dict:
+                    flux = line_fluxes[utils.lines_dict[line]]
+                else:
+                    line = utils.alt_lines_dict.get(line, False)
+                    if not line:
+                        raise ValueError("The line %s is not in the lines_dict or alt_lines_dict" % line)
+                    flux = line_fluxes[line]
+                line_fluxes_b.append(flux)
+            line_fluxes_b = np.sum(line_fluxes_b)
             setattr(self, line_ratio, np.array([line_fluxes_a / line_fluxes_b]))
 
     def _calculate_ndot_ion_caseB(self, model_comp, frame = "rest", out_units = u.Hz):

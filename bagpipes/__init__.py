@@ -3,16 +3,25 @@ from __future__ import print_function, division, absolute_import
 
 
 import os
+import importlib
+import sys
+
+from .config_utils import set_config
+
 try:
     use_bpass = bool(int(os.environ['use_bpass']))
+    if use_bpass:
+        config_name = '_bpass'
 except KeyError:
-    use_bpass = False
+    try:
+        config_name = os.environ['PIPES_CONFIG_NAME']
+        if not config_name.startswith('_'):
+            config_name = '_' + config_name
+    except KeyError:
+        config_name = ''
 
-if use_bpass:
-    print('Setup to use BPASS')
-    from . import config_bpass as config
-else:
-    from . import config
+
+config = set_config(config_name, return_config=True, reload=False)
 
 from . import utils
 
