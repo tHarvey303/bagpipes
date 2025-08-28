@@ -15,7 +15,7 @@ def set_config(config_name, return_config=False, reload=True):
         if config_name != '':
             if config_name[0] != '_':
                 config_name = '_' + config_name
-            print(f"Using configuration: {config_name[1:]}")
+
         module_name = '.configs.config' + config_name
         config_module = importlib.import_module(module_name, package='bagpipes')
 
@@ -31,4 +31,5 @@ def set_config(config_name, return_config=False, reload=True):
         # Reload the module to ensure any changes are applied
         importlib.reload(sys.modules['bagpipes'])
 
-    return config
+    if return_config:
+        return config
