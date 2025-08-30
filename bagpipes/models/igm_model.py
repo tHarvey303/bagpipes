@@ -3,7 +3,7 @@ from __future__ import print_function, division, absolute_import
 import numpy as np
 import os
 
-from .. import config
+from bagpipes import config
 
 
 def interp_discont(x, xp, fp, xdiscont, left=None, right=None):

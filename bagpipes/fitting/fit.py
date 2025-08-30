@@ -9,7 +9,7 @@ import h5py
 import contextlib
 
 
-from .. import config
+from bagpipes import config
 
 from copy import deepcopy
 
@@ -333,9 +333,9 @@ class fit(object):
                 if use_bpass:
                     print('Setup to use BPASS')
                     mtype = 'BPASS'
-                    from .. import config_bpass as config
+                    from bagpipes import config_bpass as config
                 else:
-                    from .. import config
+                    from bagpipes import config
                     mtype = 'BC03'
 
             try:
@@ -415,10 +415,15 @@ class fit(object):
                                 sdata = data[j]
                         else:
                             sdata = data[j]
+
+                        if isinstance(sdata, np.ndarray):
+                            sdata = np.squeeze(sdata)
                         file[k].create_dataset(j, data=sdata, compression="gzip" if type(sdata) is np.ndarray else None) 
             else:
                 data = self.results[k]
                 if k not in file.keys():
+                    if isinstance(data, np.ndarray):
+                        data = np.squeeze(data)
                     file.create_dataset(k, data=data, compression="gzip" if type(data) is np.ndarray else None)
         file.close()
         
