@@ -14,7 +14,7 @@ except KeyError:
     use_bpass = False
 
 
-from .. import config
+from bagpipes import config
 
 from .. import plotting
 

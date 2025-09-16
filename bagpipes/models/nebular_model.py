@@ -7,7 +7,7 @@ try:
 except KeyError:
     use_bpass = False
 
-from .. import config
+from bagpipes import config
 
 class nebular(object):
     """ Allows access to and maniuplation of nebular emission models.

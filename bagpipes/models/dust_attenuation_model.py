@@ -4,7 +4,7 @@ import numpy as np
 
 import os
 
-from .. import config
+from bagpipes import config
 
 
 class dust_attenuation(object):

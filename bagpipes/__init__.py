@@ -8,6 +8,8 @@ import sys
 
 from .config_utils import set_config
 
+config_name = 'BC03'
+
 try:
     use_bpass = bool(int(os.environ['use_bpass']))
     if use_bpass:
@@ -18,8 +20,9 @@ except KeyError:
         if not config_name.startswith('_'):
             config_name = '_' + config_name
     except KeyError:
-        config_name = ''
+        pass
 
+print(f"Using configuration: {config_name[1:] if config_name[0]=='_' else config_name}")
 
 config = set_config(config_name, return_config=True, reload=False)
 

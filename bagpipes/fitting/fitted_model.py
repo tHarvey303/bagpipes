@@ -169,8 +169,11 @@ class fitted_model(object):
         if self.galaxy.index_list is not None:
             lnlike += self._lnlike_indices()
 
+        # print(self.model_components)
         # Return zero likelihood if lnlike = nan (something went wrong).
         if np.isnan(lnlike):
+            print(x)
+            print(self.model_components)
             print("Bagpipes: lnlike was nan, replaced with zero probability.")
             return -9.99*10**99
 
@@ -264,6 +267,7 @@ class fitted_model(object):
 
         # Substitute values of fit params from param into model_comp.
         for i in range(len(self.params)):
+            # print(param[i])
             split = self.params[i].split(":")
             if len(split) == 1:
                 self.model_components[self.params[i]] = param[i]

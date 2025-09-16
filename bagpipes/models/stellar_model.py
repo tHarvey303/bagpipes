@@ -8,7 +8,7 @@ except KeyError:
     use_bpass = False
 
 
-from .. import config
+from bagpipes import config
 
 
 from .. import utils
@@ -47,7 +47,6 @@ class stellar(object):
                                                    raw_grid[j, :],
                                                    left=0., right=0.)
 
-        print(np.sum(grid_raw_ages), grid_raw_ages.shape)
 
         return grid_raw_ages
 

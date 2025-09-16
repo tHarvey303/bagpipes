@@ -13,7 +13,7 @@ import astropy.constants as const
 import os
 from .. import utils
 
-from .. import config
+from bagpipes import config
 
 from .. import filters
 from .. import plotting
@@ -126,7 +126,7 @@ class model_galaxy(object):
             use_bpass = False
 
 
-        from .. import config
+        from bagpipes import config
 
         if model_components["redshift"] > config.max_redshift:
             raise ValueError("Bagpipes attempted to create a model with too "
@@ -708,7 +708,10 @@ class model_galaxy(object):
         f_cont_Ha = np.mean(dustcorr_cont_spectrum[((self.wavelengths > line_wav - delta_wav / 2.) & (self.wavelengths < line_wav + delta_wav / 2.))])
         # calculate dust corrected line fluxes and calculate rest frame EW
         self._calculate_dustcorr_em_lines(model_comp)
-        self.Halpha_EWrest = np.array([(self.line_fluxes_dustcorr["H  1  6562.81A"] / f_cont_Ha) / (1. + model_comp["redshift"])])
+        try:
+            self.Halpha_EWrest = np.array([(self.line_fluxes_dustcorr[utils.lines_dict['Halpha']] / f_cont_Ha) / (1. + model_comp["redshift"])])
+        except KeyError:
+            self.Halpha_EWrest = np.array([self.line_fluxes_dustcorr[utils.lines_dict_alt['Halpha']] / f_cont_Ha / (1. + model_comp["redshift"])])
 
     def _save_emission_line_fluxes(
         self,
@@ -731,7 +734,7 @@ class model_galaxy(object):
             if line_dict_name in arr:
                 flux = arr[line_dict_name]
             else:
-                line_dict_name = utils.alt_lines_dict.get(line, False)
+                line_dict_name = utils.lines_dict_alt.get(line, False)
                 flux = arr[line_dict_name]
             line_flux = np.array([flux])
             line_name = f"{line}_flux_{frame}"
@@ -766,7 +769,7 @@ class model_galaxy(object):
             if line_key in arr:
                 flux = arr[line_key]
             else:
-                line_key = utils.alt_lines_dict.get(line, False)
+                line_key = utils.lines_dict_alt.get(line, False)
                 flux = arr[line_key]
             line_flux = np.array([flux])
             line_index = abs(self.wavelengths - line_wav).argmin()
@@ -803,24 +806,24 @@ class model_galaxy(object):
 
             line_fluxes_a = []
             for line in lines_a:
-                if line in utils.lines_dict:
+                if utils.lines_dict[line] in line_fluxes:
                     flux = line_fluxes[utils.lines_dict[line]]
                 else:
-                    line = utils.alt_lines_dict.get(line, False)
+                    line = utils.lines_dict_alt.get(line, False)
                     if not line:
-                        raise ValueError("The line %s is not in the lines_dict or alt_lines_dict" % line)
+                        raise ValueError("The line %s is not in the lines_dict or lines_dict_alt" % line)
                     flux = line_fluxes[line]
                 line_fluxes_a.append(flux)
             line_fluxes_a = np.sum(line_fluxes_a)
             lines_b = line_ratio.split("__")[1].split("+")
             line_fluxes_b = []
             for line in lines_b:
-                if line in utils.lines_dict:
+                if utils.lines_dict[line] in line_fluxes:
                     flux = line_fluxes[utils.lines_dict[line]]
                 else:
-                    line = utils.alt_lines_dict.get(line, False)
+                    line = utils.lines_dict_alt.get(line, False)
                     if not line:
-                        raise ValueError("The line %s is not in the lines_dict or alt_lines_dict" % line)
+                        raise ValueError("The line %s is not in the lines_dict or lines_dict_alt" % line)
                     flux = line_fluxes[line]
                 line_fluxes_b.append(flux)
             line_fluxes_b = np.sum(line_fluxes_b)
@@ -831,8 +834,12 @@ class model_galaxy(object):
         # calculate luminosity distance
         d_L = utils.cosmo.luminosity_distance(model_comp["redshift"]).to(u.pc)
         # extract Halpha line flux in appropriate frame
-        Ha_flux = getattr(self, f"line_fluxes_dustcorr_{frame}")["H  1  6562.81A"] \
-            * (u.erg / (u.s * u.cm ** 2))
+        try:
+            Ha_flux = getattr(self, f"line_fluxes_dustcorr_{frame}")[utils.lines_dict_alt['Halpha']] \
+                * (u.erg / (u.s * u.cm ** 2))
+        except KeyError:
+            Ha_flux = getattr(self, f"line_fluxes_dustcorr_{frame}")[utils.lines_dict['Halpha']] \
+                * (u.erg / (u.s * u.cm ** 2))
         # convert line flux to line luminosity
         Ha_lum = 4 * np.pi * Ha_flux * d_L ** 2
         # extract f_esc from model_comp
