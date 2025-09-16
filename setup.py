@@ -25,7 +25,7 @@ setup(
 
     packages=["bagpipes", "bagpipes.fitting", "bagpipes.catalogue",
               "bagpipes.models", "bagpipes.filters", "bagpipes.input",
-              "bagpipes.plotting", "bagpipes.models.making", "bagpipes.moons"],
+              "bagpipes.plotting", "bagpipes.making", "bagpipes.moons"],
 
     include_package_data=True,
 

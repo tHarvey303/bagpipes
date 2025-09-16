@@ -24,8 +24,12 @@ def _write_stellar_fits(grid_name: str, output_dir: Path, grid: Grid) -> str:
     """Writes the stellar SPS grid to the correct Bagpipes FITS format."""
     wavelengths_aa = grid.lam.to('Angstrom').value
     ages_yr = grid.axes_values['ages']
-
-    live_frac = np.ones((len(ages_yr), len(grid.axes_values['metallicities'])))
+    
+    if hasattr(grid, 'stellar_fraction'):
+        live_frac = grid.stellar_fraction.astype(np.float64)
+    else:
+        print("No stellar_fraction attribute found in grid; assuming all mass is in living stars.")
+        live_frac = np.ones((len(ages_yr), len(grid.axes_values['metallicities'])))
 
     # Get the spectral data from the synthesizer grid.
     # The shape is (n_ages, n_metallicities, n_wavelengths).
@@ -197,7 +201,7 @@ try:
     metallicities = {metallicities_str}
     raw_stellar_ages = {ages_yr_str}
     wavelengths = fits.open(full_stellar_path)[-1].data
-    live_frac = fits.open(full_stellar_path)[-3].data.T
+    live_frac = fits.open(full_stellar_path)[-3].data
     raw_stellar_grid = fits.open(full_stellar_path)[1:{n_metal_hdus + 1}]
     metallicity_bins = make_bins(metallicities, make_rhs=True)[0]
     metallicity_bins[0] = 0.
@@ -340,7 +344,7 @@ def move_to_bagpipes(
 
         san_grid_name = grid_name.replace(" ", "_").replace("-", "_").replace(".", "_")
         print('Sanitized grid name:', san_grid_name)
-        config_name = f"config_{san_grid_name}.py"
+        config_name = f"config_{san_grid_name.replace('_hdf5', '.py')}"
         config_path = Path(output_dir) / config_name
         shutil.move(config_path, target_config_dir / config_name)
 
