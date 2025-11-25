@@ -64,7 +64,7 @@ class dust_attenuation(object):
             return
 
         # Variable shape dust laws have to be computed every time.
-        self.A_cont, self.A_line= getattr(self, self.type)(param)
+        self.A_cont, self.A_line = getattr(self, self.type)(param)
 
     def CF00(self, param):
         """ Modified Charlot + Fall (2000) model of Carnall et al.

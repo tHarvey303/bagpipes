@@ -1,6 +1,7 @@
 from __future__ import print_function, division, absolute_import
 
 
+__version__ = "1.3.2"
 
 import os
 import importlib
