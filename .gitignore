@@ -5,6 +5,7 @@ bagpipes/models/grids/*.txt
 ancillary_code/*
 examples/*
 bagpipes/configs/config_*.py
+!bagpipes/configs/config_BC03.py
 !bagpipes/configs/config_bpass.py
 bagpipes/making/bagpipes_output
 

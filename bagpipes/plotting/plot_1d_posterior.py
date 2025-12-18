@@ -72,7 +72,7 @@ def plot_1d_posterior(fit, fit2=False, show=False, save=True):
             j += 1
 
             if tex_on:
-                label = "$t_{" + str(t_percentile) + "}\ /\ \mathrm{Gyr}$"
+                label = "$t_{" + str(t_percentile) + "}\\ /\\ \\mathrm{Gyr}$"
 
             else:
                 label = "t" + str(t_percentile) + " / Gyr"

@@ -135,14 +135,27 @@ class star_formation_history:
         age_mask_10myr = (self.ages < 10**7)
         self.sfr_10myr =  np.sum(self.sfh[age_mask_10myr]*self.age_widths[age_mask_10myr])
         self.sfr_10myr /= self.age_widths[age_mask_10myr].sum()
-        self.burstiness = self.sfr_10myr / self.sfr_100myr
+        
+        # ssfr and nsfr: if sfr=0, set as nan to avoid divide by 0 warning
+        if self.sfr == 0:
+            self.burstiness = np.nan
+            self.ssfr = np.nan
+            self.ssfr_100myr = np.nan
+            self.nsfr = np.nan
+            self.nsfr_100myr = np.nan
+        else:
+            self.burstiness = self.sfr_10myr / self.sfr_100myr
+            self.ssfr = np.log10(self.sfr) - self.stellar_mass
+            self.ssfr_100myr = self.ssfr
+            self.nsfr = np.log10(self.sfr*self.age_of_universe) - self.formed_mass
+            self.nsfr_100myr = self.nsfr
 
-        self.ssfr = np.log10(self.sfr) - self.stellar_mass
-        self.ssfr_10myr = np.log10(self.sfr_10myr) - self.stellar_mass
-        self.ssfr_100myr = self.ssfr
-        self.nsfr = np.log10(self.sfr*self.age_of_universe) - self.formed_mass
-        self.nsfr_10myr = np.log10(self.sfr_10myr*self.age_of_universe) - self.formed_mass
-        self.nsfr_100myr = self.nsfr
+        if self.sfr_10myr == 0:
+            self.ssfr_10myr = np.nan
+            self.nsfr_10myr = np.nan
+        else:
+            self.ssfr_10myr = np.log10(self.sfr_10myr) - self.stellar_mass
+            self.nsfr_10myr = np.log10(self.sfr_10myr*self.age_of_universe) - self.formed_mass
 
         self.mass_weighted_age = np.sum(self.sfh*self.age_widths*self.ages)
         self.mass_weighted_age /= np.sum(self.sfh*self.age_widths)

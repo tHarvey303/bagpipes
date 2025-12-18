@@ -1,6 +1,7 @@
 from __future__ import print_function, division, absolute_import
 
 
+__version__ = "1.3.2"
 
 import os
 import importlib
@@ -14,7 +15,7 @@ from .config_utils import (
     reload_config_from_environment
 )
 
-config_name = 'BC03'
+config_name = 'BC03_v1_3'
 
 try:
     use_bpass = bool(int(os.environ['use_bpass']))
