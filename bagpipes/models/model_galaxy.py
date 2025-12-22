@@ -357,6 +357,15 @@ class model_galaxy(object):
         if self.nebular:
             grid = np.copy(self.sfh.ceh.grid)
 
+            # adding picket fence fesc
+            if "fesc" in list(model_comp["nebular"]):
+                fesc = model_comp["nebular"]["fesc"]
+
+                if not (0.0 <= fesc <= 1.0):
+                    raise ValueError("fesc must be between 0 and 1.")
+            else:
+                fesc = 0.0
+
             if "metallicity" in list(model_comp["nebular"]):
                 nebular_metallicity = model_comp["nebular"]["metallicity"]
                 neb_comp = deepcopy(model_comp)
@@ -370,15 +379,12 @@ class model_galaxy(object):
             em_lines += self.nebular.line_fluxes(grid, t_bc,
                                                  model_comp["nebular"]["logU"])
 
-            # Stellar light below 912A is converted to nebular emission
-            if "fesc" in list(model_comp["nebular"]):
-                f_esc = model_comp["nebular"]["fesc"]
-            else:
-                f_esc = 0.
+            # keep a copy of original BC spectrum for later (i.e., fesc=100%)
+            spectrum_bc_f100 = np.copy(spectrum_bc)
 
-            spectrum_bc[self.wavelengths < 912.] *= f_esc
-            logU = model_comp["nebular"]["logU"]
-            spectrum_bc += (1 - f_esc)*self.nebular.spectrum(grid, t_bc, logU)
+            spectrum_bc[self.wavelengths < 912.] *= 0.0
+            spectrum_bc += self.nebular.spectrum(grid, t_bc,
+                                                 model_comp["nebular"]["logU"])
 
         # Add attenuation due to stellar birth clouds.
         if self.dust_atten:
@@ -396,7 +402,7 @@ class model_galaxy(object):
 
                 spectrum_bc_dust = spectrum_bc*bc_trans_red
                 dust_flux += np.trapz(spectrum_bc - spectrum_bc_dust,
-                                      x=self.wavelengths)
+                                      x=self.wavelengths) * (1.0 - fesc)
 
                 spectrum_bc = spectrum_bc_dust
 
@@ -412,16 +418,24 @@ class model_galaxy(object):
                 bc_Av = eta*model_comp["dust"]["Av"]
                 em_lines *= 10**(-bc_Av*self.dust_atten.A_line/2.5)
 
-        spectrum += spectrum_bc  # Add birth cloud spectrum to spectrum.
+        # Track fesc on line fluxes before (potentially) adding diff dust
+        em_lines = em_lines * (1.0 - fesc)
 
         # Add attenuation due to the diffuse ISM.
         if self.dust_atten:
             trans = 10**(-model_comp["dust"]["Av"]*self.dust_atten.A_cont/2.5)
             dust_spectrum = spectrum*trans
-            dust_flux += np.trapz(spectrum - dust_spectrum, x=self.wavelengths)
+            dust_spectrum_bc = spectrum_bc*trans
 
-            spectrum = dust_spectrum
-            self.spectrum_bc = spectrum_bc*trans
+            dust_flux += np.trapz(spectrum - dust_spectrum, x=self.wavelengths)
+            dust_flux += np.trapz(spectrum_bc - dust_spectrum_bc,
+                                  x=self.wavelengths) * (1.0 - fesc)
+
+            spectrum = (dust_spectrum + dust_spectrum_bc*(1.0 - fesc)
+                        + spectrum_bc_f100*fesc)
+
+            self.spectrum_bc = ((spectrum_bc*trans) * (1.0 - fesc)
+                                + spectrum_bc_f100*fesc)
 
             # Add dust emission.
             qpah, umin, gamma = 2., 1., 0.01
@@ -436,6 +450,9 @@ class model_galaxy(object):
 
             spectrum += dust_flux*self.dust_emission.spectrum(qpah, umin,
                                                               gamma)
+
+        else: # if no diffuse dust is added, just add birth cloud spectrum to spectrum.
+            spectrum += spectrum_bc*(1.0 - fesc) + spectrum_bc_f100*fesc
 
         spectrum *= self.igm.trans(model_comp["redshift"])
 

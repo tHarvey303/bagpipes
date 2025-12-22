@@ -98,9 +98,9 @@ class noise_model(object):
         self.corellated = True
 
     def GP_SHOTerm(self):
-        """ 
-        A GP noise model that uses celerite2's SHOTerm kernel 
-        for corellated noise and white noise (jitter term). 
+        """
+        A GP noise model that uses celerite2's SHOTerm kernel
+        for corellated noise and white noise (jitter term).
         This have been shown to be similar in behaviour to the
         squared exponential kernel but at least 100x faster.
         For more detail, see Leung et al. 2024
@@ -119,10 +119,16 @@ class noise_model(object):
         # dampening quality factor Q
         Q = self.param["Q"]
 
-        kernel = terms.SHOTerm(sigma=norm, rho=period, Q=Q)
+        try:
+            kernel = terms.SHOTerm(sigma=norm, rho=period, Q=Q)
+
+        except NameError:
+            print("Error when trying to use SHOTerm kernel from celerite2,"
+                  + " please ensure celerite2 is installed.")
+
         self.gp = celerite2.GaussianProcess(kernel)
         self.gp.compute(self.x, yerr=self.y_err*scaling)
-        # renaming the method gp.log_likelihood to gp.lnlikelihood 
+        # renaming the method gp.log_likelihood to gp.lnlikelihood
         # to be consistent with the old package george
         # so _lnlike_spec in fitted_model.py does not need changing
         self.gp.lnlikelihood = self.gp.log_likelihood

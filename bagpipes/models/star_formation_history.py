@@ -288,7 +288,7 @@ class star_formation_history:
         sfr[mask] = ((t/tau)**alpha + (t/tau)**-beta)**-1
 
         # Added 1.5* after Hin tests showing SFH shape was being restricted
-        if 1.5*tau > self.age_of_universe:
+        if tau > 1.5*self.age_of_universe:
             self.unphysical = True
 
     def iyer(self, sfr, param):

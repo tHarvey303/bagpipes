@@ -5,6 +5,18 @@ Latest News
 
 I'm going to attempt to keep this page updated with news about the code, including updates to the code and documentation, as well as issues people make me aware of.
 
+
+December 2025
+------------
+
+**Monday 22nd:** Version 1.3.3 of the code has been released today.
+
+ - A fix has been made to a bug that was recently introduced into the double power law SFH model.
+
+ - The fesc model has been improved, now using the version described in `Giovinazzo et al. (2025) <https://ui.adsabs.harvard.edu/abs/2025arXiv250701096G/abstract>`_.
+
+ - The code should now be compatible with Numpy v2
+
 November 2025
 ------------
 
