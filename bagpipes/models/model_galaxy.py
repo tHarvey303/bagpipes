@@ -348,11 +348,16 @@ class model_galaxy(object):
         internal full spectrum. """
 
         t_bc = 0.01
+        fesc = 0.0
+
         if "t_bc" in list(model_comp):
             t_bc = model_comp["t_bc"]
 
         spectrum_bc, spectrum = self.stellar.spectrum(self.sfh.ceh.grid, t_bc)
         em_lines = np.zeros(config.line_wavs.shape)
+
+        # keep a copy of original BC spectrum for later (i.e., fesc=100%)
+        spectrum_bc_f100 = np.copy(spectrum_bc)
 
         if self.nebular:
             grid = np.copy(self.sfh.ceh.grid)
@@ -363,8 +368,6 @@ class model_galaxy(object):
 
                 if not (0.0 <= fesc <= 1.0):
                     raise ValueError("fesc must be between 0 and 1.")
-            else:
-                fesc = 0.0
 
             if "metallicity" in list(model_comp["nebular"]):
                 nebular_metallicity = model_comp["nebular"]["metallicity"]
@@ -378,9 +381,6 @@ class model_galaxy(object):
 
             em_lines += self.nebular.line_fluxes(grid, t_bc,
                                                  model_comp["nebular"]["logU"])
-
-            # keep a copy of original BC spectrum for later (i.e., fesc=100%)
-            spectrum_bc_f100 = np.copy(spectrum_bc)
 
             spectrum_bc[self.wavelengths < 912.] *= 0.0
             spectrum_bc += self.nebular.spectrum(grid, t_bc,
