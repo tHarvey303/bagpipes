@@ -451,7 +451,7 @@ class model_galaxy(object):
                 spectrum_bc = spectrum_bc_dust
 
             # Attenuate emission line fluxes.
-            if self.dust_atten.type == "VW07":
+            if self.dust_atten.type == "VW07" and add_lines:
                 Av = model_comp["dust"]["Av"]
                 # Apply birth cloud attenuation first
                 em_lines *= 10**(-bc_Av_reduced*self.dust_atten.A_line_bc/2.5)
