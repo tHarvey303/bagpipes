@@ -29,8 +29,6 @@ except KeyError:
     except KeyError:
         pass
 
-print(f"Using configuration: {config_name[1:] if config_name[0]=='_' else config_name}")
-
 config = set_config(config_name, return_config=True, reload=False)
 
 from . import utils

@@ -37,6 +37,9 @@ def set_config(config_name, return_config=False, reload=True):
     >>> # Switch to custom configuration and get reference
     >>> my_config = set_config('my_custom_config', return_config=True)
     """
+
+    print(f"Using configuration: {config_name[1:] if config_name[0]=='_' else config_name}")
+
     os.environ['PIPES_CONFIG_NAME'] = config_name
     
     try:
@@ -96,6 +99,7 @@ def list_available_configs():
     >>> configs = list_available_configs()
     >>> print("Available configs:", configs)
     """
+    
     try:
         # Get the configs directory path
         import bagpipes.configs
