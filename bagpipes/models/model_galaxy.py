@@ -382,7 +382,7 @@ class model_galaxy(object):
             em_lines += self.nebular.line_fluxes(grid, t_bc,
                                                  model_comp["nebular"]["logU"])
 
-            spectrum_bc[self.wavelengths < 912.] *= 0.0
+            spectrum_bc[self.wavelengths < 912.] *= fesc
             spectrum_bc += self.nebular.spectrum(grid, t_bc,
                                                  model_comp["nebular"]["logU"])
 
