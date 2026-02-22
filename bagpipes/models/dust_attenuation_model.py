@@ -169,10 +169,10 @@ class dust_attenuation(object):
         mask3 = (wavs < 31000.) & (wavs >= 6300.)
 
         A_lambda[mask1] = ((wavs_mic[mask1]/0.12)**-0.77
-                           * (4.05 + 2.695*(- 2.156 + 1.509/0.12
+                           * (4.05 + 2.659*(- 2.156 + 1.509/0.12
                                             - 0.198/0.12**2 + 0.011/0.12**3)))
 
-        A_lambda[mask2] = (4.05 + 2.695*(- 2.156
+        A_lambda[mask2] = (4.05 + 2.659*(- 2.156
                                          + 1.509/wavs_mic[mask2]
                                          - 0.198/wavs_mic[mask2]**2
                                          + 0.011/wavs_mic[mask2]**3))
