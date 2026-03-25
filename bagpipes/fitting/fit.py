@@ -75,11 +75,10 @@ def _read_multinest_data(filename):
     # '0.148232-104'  -> 1.482320e-105
     # '0.148232E-10'  -> 1.482320e-011
     # '1.148232'      -> 1.48232e+000
-    convert = lambda s: float(re.sub(r'(\d)([\+\-])(\d)', r'\1E\2\3',
-                                     s.decode()))
+    convert = lambda s: float(re.sub(r'(\d)([\+\-])(\d)', r'\1E\2\3', s))
     converters = dict(zip(range(ncolumns), [convert] * ncolumns))
 
-    return np.genfromtxt(filename, converters=converters)
+    return np.genfromtxt(filename, converters=converters, encoding=None)
 
 
 
@@ -411,8 +410,13 @@ class fit(object):
 
         # This is necessary for converting large arrays to strings
         np.set_printoptions(threshold=10**7)
+        print('Adding config and fit instructions to h5 file.')
         file.attrs["fit_instructions"] = fit_instructions
         file.attrs["config"] = config_dict
+
+        if self.galaxy.filt_list is not None:
+            file.attrs['filt_list'] = list(self.galaxy.filt_list)
+
         np.set_printoptions(threshold=10**4)
 
         for k in self.results.keys():

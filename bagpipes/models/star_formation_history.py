@@ -302,7 +302,7 @@ class star_formation_history:
 
         sfr[mask] = ((t/tau)**alpha + (t/tau)**-beta)**-1
 
-        if tau > self.age_of_universe:
+        if tau > 1.5*self.age_of_universe:
             self.unphysical = True
 
     def iyer2019(self, sfr, param):

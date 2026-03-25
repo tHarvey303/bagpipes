@@ -29,7 +29,7 @@ setup(
 
     include_package_data=True,
 
-    install_requires=["numpy", "corner", "pymultinest>=2.11", "h5py", "pandas",
+    install_requires=["numpy<=2.2", "corner", "pymultinest>=2.11", "h5py", "pandas",
                       "astropy", "matplotlib>=2.2.2", "scipy", "msgpack",
                       "spectres", "nautilus-sampler>=1.0.2"],
 
