@@ -454,13 +454,15 @@ class model_galaxy(object):
             if self.dust_atten.type == "VW07" and add_lines:
                 Av = model_comp["dust"]["Av"]
                 # Apply birth cloud attenuation first
-                em_lines *= 10**(-bc_Av_reduced*self.dust_atten.A_line_bc/2.5)
-                # Then apply general ISM attenuation
-                em_lines *= 10**(-Av*self.dust_atten.A_line_ism/2.5)
+                if add_lines:    
+                    em_lines *= 10**(-bc_Av_reduced*self.dust_atten.A_line_bc/2.5)
+                    # Then apply general ISM attenuation
+                    em_lines *= 10**(-Av*self.dust_atten.A_line_ism/2.5)
 
             else:
                 bc_Av = eta*model_comp["dust"]["Av"]
-                em_lines *= 10**(-bc_Av*self.dust_atten.A_line/2.5)
+                if add_lines:
+                    em_lines *= 10**(-bc_Av*self.dust_atten.A_line/2.5)
         spectrum += spectrum_bc  # Add birth cloud spectrum to spectrum.
         # Add attenuation due to the diffuse ISM.
         if self.dust_atten:
