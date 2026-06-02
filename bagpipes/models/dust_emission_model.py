@@ -55,5 +55,5 @@ class dust_emission(object):
                              config.dust_grid_umin_only[1][:, 0],
                              model, left=0., right=0.)
 
-        spectrum_norm = spectrum / np.trapz(spectrum, x=self.wavelengths)
+        spectrum_norm = spectrum / np.trapezoid(spectrum, x=self.wavelengths)
         return spectrum_norm

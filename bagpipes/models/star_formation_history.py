@@ -48,7 +48,7 @@ class star_formation_history:
 
     def __init__(self, model_components, log_sampling=0.0025):
 
-        self.hubble_time = utils.age_at_z[utils.z_array == 0.]
+        self.hubble_time = utils.age_at_z[utils.z_array == 0.][0]
 
         # Set up the age sampling for internal SFH calculations.
         log_age_max = np.log10(self.hubble_time)+9. + 2*log_sampling
