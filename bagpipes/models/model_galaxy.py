@@ -312,7 +312,7 @@ class model_galaxy(object):
         model_components : dict
             A dictionary containing information about the model you wish to
             generate.
-        extra_model_components : boolean - whether to calculate non critical outputs -UVJ, beta_C94, D4000, M_UV, L_UV_dustcorr, Halpha_EWrest, xi_ion_caseB
+        extra_model_components : boolean - whether to calculate non critical outputs -UVJ, beta_C94, D4000, M_UV, L_UV_dustcorr, Halpha_EWrest, xi_ion_caseB, ndot_ion_caseB
         """
 
 
@@ -367,9 +367,9 @@ class model_galaxy(object):
                 self._calculate_beta_C94(model_components)
                 self._calculate_M_UV(model_components)
                 self._calculate_D4000(model_components)
+                self._calculate_xi_ion_caseB(model_components)
+                self._calculate_Ndot_ion_caseB(model_components, out_units = u.Hz)
                 for frame in ["rest", "obs"]:
-                    self._calculate_xi_ion_caseB(model_components, frame = frame)
-                    self._calculate_ndot_ion_caseB(model_components, frame = frame)
                     self._save_emission_line_fluxes(model_components, lines = self.lines_to_save, frame = frame)
                     self._save_emission_line_EWs(model_components, lines = self.lines_to_save, frame = frame)
                 self._save_line_ratios(model_components, line_ratios = self.line_ratios_to_save)
@@ -698,7 +698,7 @@ class model_galaxy(object):
         self.M_UV = np.array([self.m_UV - 5 * np.log10(d_L.value / 10) \
             + 2.5 * np.log10(1 + model_comp["redshift"])])
 
-    def _calculate_L_UV_dustcorr(self, model_comp, frame = "rest", out_units = u.erg):
+    def _calculate_L_UV_dustcorr(self, model_comp, out_units = u.erg):
         dustcorr_spectrum = self._calculate_full_dustcorr_spectrum(model_comp)
         d_L = utils.cosmo.luminosity_distance(model_comp["redshift"]).to(u.pc)
         # calculate observed frame flux at 1500 Angstrom rest frame
@@ -706,9 +706,8 @@ class model_galaxy(object):
             (self.wavelengths < 1_550.))]) * u.erg / (u.s * (u.cm ** 2) * u.AA) * \
             ((1_500. * (1. + self.model_comp["redshift"]) * u.AA) ** 2) / const.c).to(u.Jy)
         # calculate L_UV
-        L_UV = np.array([4 * np.pi * (f_Jy_1500 * d_L ** 2).to(out_units).value])
-        # observed frame == rest frame luminosity (nu)
-        setattr(self, f"L_UV_dustcorr_{frame}", L_UV)
+        L_UV = np.array([(4 * np.pi * f_Jy_1500 * d_L ** 2 / (1. + model_comp["redshift"])).to(out_units).value])
+        setattr(self, "L_UV_dustcorr", L_UV)
 
     def _calculate_Halpha_EWrest(self, model_comp, line_wav = 6563., delta_wav = 100.):
         # calculate Halpha continuum flux
@@ -836,16 +835,16 @@ class model_galaxy(object):
             line_fluxes_b = np.sum(line_fluxes_b)
             setattr(self, line_ratio, np.array([line_fluxes_a / line_fluxes_b]))
 
-    def _calculate_ndot_ion_caseB(self, model_comp, frame = "rest", out_units = u.Hz):
-        self._calculate_dustcorr_em_lines(model_comp, frame = frame)
+    def _calculate_Ndot_ion_caseB(self, model_comp, out_units = u.Hz):
+        self._calculate_dustcorr_em_lines(model_comp, frame = "obs")
         # calculate luminosity distance
         d_L = utils.cosmo.luminosity_distance(model_comp["redshift"]).to(u.pc)
         # extract Halpha line flux in appropriate frame
         try:
-            Ha_flux = getattr(self, f"line_fluxes_dustcorr_{frame}")[utils.lines_dict_alt['Halpha']] \
+            Ha_flux = getattr(self, "line_fluxes_dustcorr_obs")[utils.lines_dict_alt['Halpha']] \
                 * (u.erg / (u.s * u.cm ** 2))
         except KeyError:
-            Ha_flux = getattr(self, f"line_fluxes_dustcorr_{frame}")[utils.lines_dict['Halpha']] \
+            Ha_flux = getattr(self, "line_fluxes_dustcorr_obs")[utils.lines_dict['Halpha']] \
                 * (u.erg / (u.s * u.cm ** 2))
         # convert line flux to line luminosity
         Ha_lum = 4 * np.pi * Ha_flux * d_L ** 2
@@ -855,18 +854,18 @@ class model_galaxy(object):
         conv = 7.28e11 / u.erg # (slightly different to 1 / 1.36e-12)
         # calculate ndot_ion
         ndot_ion = np.array([(Ha_lum * conv / (1. - f_esc)).to(out_units).value])
-        setattr(self, f"ndot_ion_caseB_{frame}", ndot_ion)
+        setattr(self, "Ndot_ion_caseB", ndot_ion)
 
-    def _calculate_xi_ion_caseB(self, model_comp, frame = "rest", out_units = u.Hz / u.erg):
-        # extract ndot_ion in appropriate frame
-        self._calculate_ndot_ion_caseB(model_comp, frame = frame, out_units = u.Hz)
-        ndot_ion = getattr(self, f"ndot_ion_caseB_{frame}") * u.Hz
-        # extract UV luminosity in appropriate frame
-        self._calculate_L_UV_dustcorr(model_comp, frame = frame)
-        L_UV = getattr(self, f"L_UV_dustcorr_{frame}") * u.erg
+    def _calculate_xi_ion_caseB(self, model_comp, out_units = u.Hz / u.erg):
+        # extract ndot_ion
+        self._calculate_Ndot_ion_caseB(model_comp, out_units = u.Hz)
+        ndot_ion = getattr(self, "Ndot_ion_caseB") * u.Hz
+        # extract UV luminosity
+        self._calculate_L_UV_dustcorr(model_comp)
+        L_UV = getattr(self, "L_UV_dustcorr") * u.erg
         # calculate xi_ion
         xi_ion = np.array([(ndot_ion / L_UV).to(out_units).value])
-        setattr(self, f"xi_ion_caseB_{frame}", xi_ion)
+        setattr(self, "xi_ion_caseB", xi_ion)
     
     def _calculate_stellar_spectrum(self, model_comp):
         t_bc = 0.01
