@@ -1,18 +1,35 @@
 from __future__ import print_function, division, absolute_import
 
 
+__version__ = "1.3.2"
 
 import os
+import importlib
+import sys
+
+from .config_utils import (
+    set_config, 
+    list_available_configs, 
+    get_current_config, 
+    validate_config,
+    reload_config_from_environment
+)
+
+config_name = 'BC03_v1_3'
+
 try:
     use_bpass = bool(int(os.environ['use_bpass']))
+    if use_bpass:
+        config_name = '_bpass'
 except KeyError:
-    use_bpass = False
+    try:
+        config_name = os.environ['PIPES_CONFIG_NAME']
+        if not config_name.startswith('_'):
+            config_name = '_' + config_name
+    except KeyError:
+        pass
 
-if use_bpass:
-    print('Setup to use BPASS')
-    from . import config_bpass as config
-else:
-    from . import config
+config = set_config(config_name, return_config=True, reload=False)
 
 from . import utils
 

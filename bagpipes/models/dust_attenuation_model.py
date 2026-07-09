@@ -3,16 +3,8 @@ from __future__ import print_function, division, absolute_import
 import numpy as np
 
 import os
-try:
-    use_bpass = bool(int(os.environ['use_bpass']))
-except KeyError:
-    use_bpass = False
 
-if use_bpass:
-    print('Setup to use BPASS')
-    from .. import config_bpass as config
-else:
-    from .. import config
+from bagpipes import config
 
 
 class dust_attenuation(object):
@@ -54,6 +46,9 @@ class dust_attenuation(object):
             self.A_cont = self._smc_gordon(wavelengths)
             self.A_line = self._smc_gordon(config.line_wavs)
 
+        elif self.type == "VW07":
+            self.A_cont, self.A_line_bc, self.A_cont_bc, self.A_line_ism = self.VW07()
+
         # If Salim dust is selected, pre-compute Calzetti to start from.
         elif self.type == "Salim":
             self.A_cont_calz = self._calzetti(wavelengths)
@@ -65,7 +60,7 @@ class dust_attenuation(object):
     def update(self, param):
 
         # Fixed-shape dust laws are pre-computed in __init__.
-        if self.type in ["Calzetti", "Cardelli", "SMC"]:
+        if self.type in ["Calzetti", "Cardelli", "SMC", "VW07"]:
             return
 
         # Variable shape dust laws have to be computed every time.
@@ -95,6 +90,22 @@ class dust_attenuation(object):
         A_line /= Rv_m
 
         return A_cont, A_line
+
+    def VW07(self):
+        """
+        Two component dust law based on Charlot + Fall (2000) model,
+        Stars still embedded in birth clouds (age < 10Myr) have steeper
+        dust slopes n=1.3, while older stars have shallower dust slopes
+        n=0.7. Nebular lines have n=1.3
+        For details, see Wild et al. 2007
+        (https://ui.adsabs.harvard.edu/abs/2007MNRAS.381..543W)
+        """
+        A_cont = (5500./self.wavelengths)**0.7
+        A_cont_bc = (5500./self.wavelengths)**1.3
+        A_line_bc = (5500./config.line_wavs)**1.3
+        A_line_ism = (5500./config.line_wavs)**0.7
+
+        return A_cont, A_line_bc, A_cont_bc, A_line_ism
 
     def _cardelli(self, wavs):
         """ Calculate the ratio A(lambda)/A(V) for the Cardelli et al.
@@ -160,10 +171,10 @@ class dust_attenuation(object):
         mask3 = (wavs < 31000.) & (wavs >= 6300.)
 
         A_lambda[mask1] = ((wavs_mic[mask1]/0.12)**-0.77
-                           * (4.05 + 2.695*(- 2.156 + 1.509/0.12
+                           * (4.05 + 2.659*(- 2.156 + 1.509/0.12
                                             - 0.198/0.12**2 + 0.011/0.12**3)))
 
-        A_lambda[mask2] = (4.05 + 2.695*(- 2.156
+        A_lambda[mask2] = (4.05 + 2.659*(- 2.156
                                          + 1.509/wavs_mic[mask2]
                                          - 0.198/wavs_mic[mask2]**2
                                          + 0.011/wavs_mic[mask2]**3))

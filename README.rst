@@ -1,19 +1,22 @@
 **Bayesian Analysis of Galaxies for Physical Inference and Parameter EStimation**
 
 
-**Modified version of Bagpipes 1.2.0**
+**Modified version of Bagpipes 1.3.2**
 
 **Changes**
 
 1. Saving advanced quantities to .h5, which increases speed up of loading in already computed models.
-2. Adding new quantites: UV Beta slope (in Calzetti filters), absolute and apparent UV magnitudes, Emission line equivalent widths and fluxes, escape fraction, ionizing photon production efficiency (use with caution). 
+2. Adding new quantites: UV Beta slope (in Calzetti filters), absolute and apparent UV magnitudes, Emission line equivalent widths and fluxes, continuum measurements, escape fraction, ionizing photon production efficiency (use with caution). 
 3. Multiple SFH timescales - 10 and 100 Myr by default.
 4. Calculating and plotting cumulative star formation histories, to trace buildup of stellar mass.
 5. Allow varying of fit_instructions dictionary inside a fitting catalogue, and allowing different redshift constraints for each galaxy.
+6. Compressing .h5 outputs to improve space efficiency.
+7. Support for loading arbitary grids from `Synthesizer <https://synthesizer-project.github.io/synthesizer/>`_, such as FSPS, Maraston 2005/2011/2023, BPASS, Yggdrasil, etc.
 
 
 If you clone this repo you will have to download the grids seperately - you can download the grids from the Python Package index (pip) `here <https://pypi.org/project/bagpipes/#files>`_, and place them in the models/grids directory. You can then install by typing  ``pip install setup.py`` (add a -e tag if you want to link it directly to your cloned version, otherwise it will be copied into your site-packages directory. 
 
+There are some differences from the original Bagpipes code. You can switch your config whilst the code is loaded with ``bagpipes.set_config('config_name')`` - where config_name corresponds to a .py file in the bagpipes/bagpipes/configs directory. The default config is 'BC03_v1_3.py', which is the same as Bagpipes v1.3.2 default config.
 
 Bagpipes is a state of the art code for generating realistic model galaxy spectra and fitting these to spectroscopic and photometric observations. For further information please see the Bagpipes documentation at `bagpipes.readthedocs.io <http://bagpipes.readthedocs.io>`_.
 

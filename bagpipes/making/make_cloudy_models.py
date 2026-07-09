@@ -6,7 +6,14 @@ import os
 from astropy.io import fits
 
 from ... import utils
+
+try:
+    use_bpass = bool(int(os.environ['use_bpass']))
+except KeyError:
+    use_bpass = False
+
 from ... import config
+
 
 from ..model_galaxy import model_galaxy
 
@@ -165,8 +172,7 @@ def make_cloudy_input_file(age, zmet, logU, path):
     f.write("Q(H) = " + str("%.3f" % logQ) + " log\n")
     f.write("radius 19.000 log\n")
     f.write("abundances old solar 84\n")
-    # Removed grains ISM due to issue with faint lines at high ionization
-    #f.write("grains ISM\n")
+    f.write("grains ISM\n")
     f.write("metals grains " + "%.3f" % zmet + "\n")
 
     # Nitrogen abundances, -0.22 is the depletion factor, the final term
@@ -404,10 +410,7 @@ def run_cloudy_grid(path=None):
               + str(np.round(zmet, 4)) + ", age: "
               + str(np.round(age*10**-9, 5)))
 
-        if not os.path.exists(path + "/cloudy_temp_files/logU_" + "%.1f" % logU
-             + "_zmet_" + "%.3f" % zmet + "/" + "%.5f" % (age*10**-9) + ".in"):
-
-            run_cloudy_model(age*10**-9, zmet, logU, path)
+        run_cloudy_model(age*10**-9, zmet, logU, path)
 
     # Combine arrays of models assigned to cores, checks all is finished
     mpi_combine_array(thread_nos, n_models)

@@ -9,6 +9,7 @@ from .agn_model import agn
 
 from .nebular_model import nebular
 from .igm_model import igm
+from .dla_model import dla_trans
 
 from .model_galaxy import model_galaxy
 from .star_formation_history import star_formation_history
