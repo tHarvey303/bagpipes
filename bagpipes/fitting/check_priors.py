@@ -46,7 +46,7 @@ class check_priors:
                 lines_to_save = lines_to_save,
                 line_ratios_to_save = line_ratios_to_save
                 )
-        
+
         self.samples = {}
         self.samples2d = np.zeros((self.n_draws, self.ndim))
 
@@ -136,7 +136,7 @@ class check_priors:
             elif len(split) == 2:
                 if "dirichlet" in split[1]:
                     if split[0] not in dirichlet_comps:
-                        dirichlet_comps.append(split[0])
+                        dirichlet_compxs.append(split[0])
 
                 else:
                     self.model_components[split[0]][split[1]] = param[i]
@@ -208,7 +208,7 @@ class check_priors:
         if "spectrum_full" in list(self.samples):
             return
 
-        all_names = ["photometry", "spectrum", "spectrum_full", "uvj", 'beta_C94', "m_UV", "M_UV", "indices", "burstiness"]
+        all_names = ["photometry", "spectrum", "spectrum_full", "spectrum_full_cont", "uvj", 'beta_C94', "m_UV", "M_UV", "indices", "burstiness"]
         for frame in ["rest", "obs"]:
             for property in ["xi_ion_caseB", "ndot_ion_caseB"]:
                 all_names.append(f"{property}_{frame}")

@@ -8,7 +8,7 @@ except KeyError:
     use_bpass = False
 
 if use_bpass:
-    print('Setup to use BPASS')
+    #print('Setup to use BPASS')
     from .. import config_bpass as config
 else:
     from .. import config
@@ -49,7 +49,6 @@ class stellar(object):
                                                    config.wavelengths,
                                                    raw_grid[j, :],
                                                    left=0., right=0.)
-
         return grid_raw_ages
 
     def _resample_in_age(self, grid_raw_ages):
@@ -111,7 +110,6 @@ class stellar(object):
 
                 raw_age_widths[start] /= start_fact
                 raw_age_widths[stop] /= end_fact
-
         return grid
 
     def spectrum(self, sfh_ceh, t_bc=0.):
@@ -130,6 +128,17 @@ class stellar(object):
         t_bc : float
             The age at which to split the spectrum in Gyr.
         """
+
+        try:
+            use_bpass = bool(int(os.environ['use_bpass']))
+        except KeyError:
+            use_bpass = False
+
+        if use_bpass:
+            #print('Setup to use BPASS')
+            from .. import config_bpass as config
+        else:
+            from .. import config as config
 
         t_bc *= 10**9
         spectrum_young = np.zeros_like(self.wavelengths)

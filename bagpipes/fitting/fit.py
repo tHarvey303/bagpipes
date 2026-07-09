@@ -14,7 +14,7 @@ except KeyError:
     use_bpass = False
 
 if use_bpass:
-    print('Setup to use BPASS')
+    #print('Setup to use BPASS')
     from .. import config_bpass as config
 else:
     from .. import config
@@ -324,8 +324,7 @@ class fit(object):
                     self.results["lnz_err"] = 1.0 / np.sqrt(n_sampler.n_eff)
 
                 self.results["median"] = np.median(samples2d, axis=0)
-                self.results["conf_int"] = np.percentile(self.results["samples2d"],
-                                                        (16, 84), axis=0)
+                self.results["conf_int"] = np.percentile(self.results["samples2d"], (16, 84), axis=0)
                 
                 fit_instructions = str(self.fit_instructions)
                 try:
@@ -334,7 +333,7 @@ class fit(object):
                     use_bpass = False
 
                 if use_bpass:
-                    print('Setup to use BPASS')
+                    #print('Setup to use BPASS')
                     mtype = 'BPASS'
                     from .. import config_bpass as config
                 else:
@@ -353,8 +352,7 @@ class fit(object):
             self.results["lnz"] = float(np.array(file["lnz"]))
             self.results["lnz_err"] = float(np.array(file["lnz_err"]))
             self.results["median"] = np.array(file["median"])
-            self.results["conf_int"] = np.percentile(self.results["samples2d"],
-                                                        (16, 84), axis=0)
+            self.results["conf_int"] = np.percentile(self.results["samples2d"], (16, 84), axis=0)
             fit_instructions = file.attrs["fit_instructions"]
             config_dict = file.attrs["config"]
             file.close()

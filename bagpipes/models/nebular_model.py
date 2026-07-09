@@ -8,7 +8,7 @@ except KeyError:
     use_bpass = False
 
 if use_bpass:
-    print('Setup to use BPASS')
+    #print('Setup to use BPASS')
     from .. import config_bpass as config
 else:
     from .. import config
@@ -37,6 +37,17 @@ class nebular(object):
         input wavelengths. Loads nebular line grids and adds line fluxes
         to the correct pixels in order to create a combined grid. """
 
+        # try:
+        #     use_bpass = bool(int(os.environ['use_bpass']))
+        # except KeyError:
+        #     use_bpass = False
+
+        # if use_bpass:
+        #     #print('Setup to use BPASS')
+        #     from .. import config_bpass as config
+        # else:
+        #     from .. import config
+
         comb_grid = np.zeros((self.wavelengths.shape[0],
                               config.metallicities.shape[0],
                               config.logU.shape[0],
@@ -59,7 +70,7 @@ class nebular(object):
 
                 raw_cont_grid = config.cont_grid[hdu_index]#.data this was broken!! .data .data
                 raw_line_grid = config.line_grid[hdu_index]#.data
-                
+
                 line_grid[:, i, j, :] = raw_line_grid[1:, 1:].T
 
                 for k in range(config.neb_ages.shape[0]):
@@ -140,6 +151,17 @@ class nebular(object):
     def _interpolate_grid(self, grid, sfh_ceh, t_bc, logU):
         """ Interpolates a chosen grid in logU and collapses over star-
         formation and chemical enrichment history to get 1D models. """
+
+        # try:
+        #     use_bpass = bool(int(os.environ['use_bpass']))
+        # except KeyError:
+        #     use_bpass = False
+
+        # if use_bpass:
+        #     #print('Setup to use BPASS')
+        #     from .. import config_bpass as config
+        # else:
+        #     from .. import config
 
         t_bc *= 10**9
 

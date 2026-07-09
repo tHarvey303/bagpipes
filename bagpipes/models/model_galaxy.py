@@ -19,7 +19,7 @@ except KeyError:
     use_bpass = False
 
 if use_bpass:
-    print('Setup to use BPASS')
+    #print('Setup to use BPASS')
     from .. import config_bpass as config
 else:
     from .. import config
@@ -135,7 +135,7 @@ class model_galaxy(object):
             use_bpass = False
 
         if use_bpass:
-            print('Setup to use BPASS')
+            #print('Setup to use BPASS')
             from .. import config_bpass as config
         else:
             from .. import config as config
@@ -379,6 +379,7 @@ class model_galaxy(object):
 
         else:
             self._calculate_full_spectrum(model_components)
+            self._calculate_full_continuum_spectrum(model_components)
 
         if self.spec_wavs is not None:
             self._calculate_spectrum(model_components)
@@ -786,7 +787,6 @@ class model_galaxy(object):
             setattr(self, f"{line}_EW_{frame}", np.array([EW_line]))
 
 
-
     def _save_line_ratios(
         self,
         model_comp,
@@ -973,8 +973,10 @@ class model_galaxy(object):
                 self.neb_sfh.update(neb_comp)
                 grid = self.neb_sfh.ceh.grid
 
-            em_lines += self.nebular.line_fluxes(grid, t_bc,
-                model_comp["nebular"]["logU"]) * (1 - model_comp["nebular"].get("fesc", 0))
+            em_lines += self.nebular.line_fluxes(
+                grid, t_bc,
+                model_comp["nebular"]["logU"]) * (1 - model_comp["nebular"].get("fesc", 0)
+            )
 
         # Convert from luminosity to observed flux at redshift z.
         lum_flux = 1.
