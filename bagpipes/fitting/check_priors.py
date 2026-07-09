@@ -208,10 +208,8 @@ class check_priors:
         if "spectrum_full" in list(self.samples):
             return
 
-        all_names = ["photometry", "spectrum", "spectrum_full", "spectrum_full_cont", "uvj", 'beta_C94', "m_UV", "M_UV", "indices", "burstiness", "D4000"]
+        all_names = ["photometry", "spectrum", "spectrum_full", "spectrum_full_cont", "uvj", 'beta_C94', "m_UV", "M_UV", "indices", "burstiness", "D4000", "xi_ion_caseB", "Ndot_ion_caseB"]
         for frame in ["rest", "obs"]:
-            for property in ["xi_ion_caseB", "ndot_ion_caseB"]:
-                all_names.append(f"{property}_{frame}")
             for line in self.model_galaxy.lines_to_save:
                 all_names.append(f"{line}_flux_{frame}")
                 all_names.append(f"{line}_EW_{frame}")
