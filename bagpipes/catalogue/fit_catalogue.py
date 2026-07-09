@@ -291,7 +291,6 @@ class fit_catalogue(object):
 
         if self.redshifts is not None:
             ind = np.argmax(self.IDs == ID)
-
             if self.redshift_sigma is not None:
                 if isinstance(self.redshift_sigma, float):
                     if self.redshift_sigma > 0.:
@@ -440,9 +439,8 @@ class fit_catalogue(object):
         if self.full_catalogue:
             self.vars += ["UV_colour", "VJ_colour"]
             self.vars += ["beta_C94", "m_UV", "M_UV", "D4000"]
+            self.vars += ["xi_ion_caseB", "Ndot_ion_caseB"]
             for frame in ["rest", "obs"]:
-                for property in ["xi_ion_caseB", "ndot_ion_caseB"]:
-                    self.vars += [f"{property}_{frame}"]
                 for line in self.em_line_fluxes_to_save:
                     self.vars += [f"{line}_flux_{frame}", f"{line}_EW_{frame}"]
             for ratio in self.em_line_ratios_to_save:

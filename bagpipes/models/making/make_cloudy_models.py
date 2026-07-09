@@ -6,6 +6,7 @@ import os
 from astropy.io import fits
 
 from ... import utils
+
 from ... import config
 
 from ..model_galaxy import model_galaxy

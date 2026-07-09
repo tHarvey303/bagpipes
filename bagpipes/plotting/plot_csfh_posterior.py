@@ -14,12 +14,6 @@ from .general import *
 
 from .. import utils
 
-try:
-    use_bpass = bool(int(os.environ['use_bpass']))
-except KeyError:
-    use_bpass = False
-
-
 from bagpipes import config
 
 
