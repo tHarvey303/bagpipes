@@ -1,11 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
 import numpy as np
-import os
-try:
-    use_bpass = bool(int(os.environ['use_bpass']))
-except KeyError:
-    use_bpass = False
 
 from bagpipes import config
 
@@ -54,7 +49,7 @@ class nebular(object):
 
                 raw_cont_grid = config.cont_grid[hdu_index]#.data this was broken!! .data .data
                 raw_line_grid = config.line_grid[hdu_index]#.data
-                
+
                 line_grid[:, i, j, :] = raw_line_grid[1:, 1:].T
 
                 for k in range(config.neb_ages.shape[0]):

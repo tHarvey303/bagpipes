@@ -2,14 +2,8 @@ from __future__ import print_function, division, absolute_import
 
 import numpy as np
 import os
-try:
-    use_bpass = bool(int(os.environ['use_bpass']))
-except KeyError:
-    use_bpass = False
-
 
 from bagpipes import config
-
 
 from .. import utils
 
@@ -46,7 +40,6 @@ class stellar(object):
                                                    config.wavelengths,
                                                    raw_grid[j, :],
                                                    left=0., right=0.)
-
 
         return grid_raw_ages
 
@@ -108,7 +101,6 @@ class stellar(object):
 
                 raw_age_widths[start] /= start_fact
                 raw_age_widths[stop] /= end_fact
-
         return grid
 
     def spectrum(self, sfh_ceh, t_bc=0.):

@@ -1,22 +1,11 @@
 from __future__ import print_function, division, absolute_import
 
 import numpy as np
-
-
 from scipy.optimize import fsolve
-
-from .. import utils
-import os
-
-try:
-    use_bpass = bool(int(os.environ['use_bpass']))
-except KeyError:
-    use_bpass = False
-
 
 from bagpipes import config
 
-from .. import plotting
+from .. import plotting, utils
 
 from .chemical_enrichment_history import chemical_enrichment_history
 

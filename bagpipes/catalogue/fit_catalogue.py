@@ -291,7 +291,6 @@ class fit_catalogue(object):
 
         if self.redshifts is not None:
             ind = np.argmax(self.IDs == ID)
-
             if self.redshift_sigma is not None:
                 if isinstance(self.redshift_sigma, float):
                     if self.redshift_sigma > 0.:

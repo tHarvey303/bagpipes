@@ -8,7 +8,6 @@ import warnings
 import h5py
 import contextlib
 
-
 from bagpipes import config
 
 from copy import deepcopy
@@ -344,7 +343,7 @@ class fit(object):
                 use_bpass = False
 
                 if use_bpass:
-                    print('Setup to use BPASS')
+                    #print('Setup to use BPASS')
                     mtype = 'BPASS'
                     from bagpipes import config_bpass as config
                 else:
@@ -365,8 +364,7 @@ class fit(object):
             self.results["lnz"] = float(np.array(file["lnz"]))
             self.results["lnz_err"] = float(np.array(file["lnz_err"]))
             self.results["median"] = np.array(file["median"])
-            self.results["conf_int"] = np.percentile(self.results["samples2d"],
-                                                        (16, 84), axis=0)
+            self.results["conf_int"] = np.percentile(self.results["samples2d"], (16, 84), axis=0)
             fit_instructions = file.attrs["fit_instructions"]
             config_dict = file.attrs["config"]
             file.close()
