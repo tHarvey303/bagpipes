@@ -2,17 +2,8 @@ from __future__ import print_function, division, absolute_import
 
 import numpy as np
 import os
-try:
-    use_bpass = bool(int(os.environ['use_bpass']))
-except KeyError:
-    use_bpass = False
 
-if use_bpass:
-    #print('Setup to use BPASS')
-    from .. import config_bpass as config
-else:
-    from .. import config
-
+from bagpipes import config
 
 from .. import utils
 
@@ -49,6 +40,7 @@ class stellar(object):
                                                    config.wavelengths,
                                                    raw_grid[j, :],
                                                    left=0., right=0.)
+
         return grid_raw_ages
 
     def _resample_in_age(self, grid_raw_ages):
@@ -77,7 +69,6 @@ class stellar(object):
 
         # Loop over the new age bins
         for j in range(config.age_bins.shape[0] - 1):
-
             # Find the first raw bin partially covered by the new bin
             while raw_age_lhs[start + 1] <= config.age_bins[j]:
                 start += 1
@@ -128,17 +119,6 @@ class stellar(object):
         t_bc : float
             The age at which to split the spectrum in Gyr.
         """
-
-        try:
-            use_bpass = bool(int(os.environ['use_bpass']))
-        except KeyError:
-            use_bpass = False
-
-        if use_bpass:
-            #print('Setup to use BPASS')
-            from .. import config_bpass as config
-        else:
-            from .. import config as config
 
         t_bc *= 10**9
         spectrum_young = np.zeros_like(self.wavelengths)

@@ -1,18 +1,8 @@
 from __future__ import print_function, division, absolute_import
 
 import numpy as np
-import os
-try:
-    use_bpass = bool(int(os.environ['use_bpass']))
-except KeyError:
-    use_bpass = False
 
-if use_bpass:
-    #print('Setup to use BPASS')
-    from .. import config_bpass as config
-else:
-    from .. import config
-
+from bagpipes import config
 
 class nebular(object):
     """ Allows access to and maniuplation of nebular emission models.
@@ -36,17 +26,6 @@ class nebular(object):
         """ Loads Cloudy nebular continuum grid and resamples to the
         input wavelengths. Loads nebular line grids and adds line fluxes
         to the correct pixels in order to create a combined grid. """
-
-        # try:
-        #     use_bpass = bool(int(os.environ['use_bpass']))
-        # except KeyError:
-        #     use_bpass = False
-
-        # if use_bpass:
-        #     #print('Setup to use BPASS')
-        #     from .. import config_bpass as config
-        # else:
-        #     from .. import config
 
         comb_grid = np.zeros((self.wavelengths.shape[0],
                               config.metallicities.shape[0],
@@ -149,48 +128,65 @@ class nebular(object):
         return self._interpolate_grid(self.line_grid, sfh_ceh, t_bc, logU)
 
     def _interpolate_grid(self, grid, sfh_ceh, t_bc, logU):
-        """ Interpolates a chosen grid in logU and collapses over star-
-        formation and chemical enrichment history to get 1D models. """
-
-        # try:
-        #     use_bpass = bool(int(os.environ['use_bpass']))
-        # except KeyError:
-        #     use_bpass = False
-
-        # if use_bpass:
-        #     #print('Setup to use BPASS')
-        #     from .. import config_bpass as config
-        # else:
-        #     from .. import config
+        """
+        Interpolates a chosen grid in logU and collapses over star-
+        formation and chemical enrichment history to get 1D models.
+        
+        This modified version handles cases where logU is an exact grid point
+        by skipping interpolation.
+        """
 
         t_bc *= 10**9
 
-        if logU == config.logU[0]:
-            logU += 10**-10
+        # Check for an exact match in the logU grid using a small tolerance
+        match_indices = np.where(np.isclose(config.logU, logU))[0]
 
-        spectrum_low_logU = np.zeros_like(grid[:, 0, 0, 0])
-        spectrum_high_logU = np.zeros_like(grid[:, 0, 0, 0])
-
-        logU_ind = config.logU[config.logU < logU].shape[0]
-        logU_weight = ((config.logU[logU_ind] - logU)
-                       / (config.logU[logU_ind] - config.logU[logU_ind-1]))
-
+        # Find the index and weight for the age interpolation, which is
+        # needed in both cases.
         index = config.age_bins[config.age_bins < t_bc].shape[0]
-        weight = 1 - (config.age_bins[index] - t_bc)/config.age_widths[index-1]
+        weight = 1 - (config.age_bins[index] - t_bc) / config.age_widths[index-1]
+        
+        # --- Path 1: logU is an exact grid point ---
+        if len(match_indices) > 0:
+            logU_ind = match_indices[0]
+            
+            spectrum = np.zeros_like(grid[:, 0, 0, 0])
+            for i in range(config.metallicities.shape[0]):
+                if sfh_ceh[i, :index].sum() > 0.:
+                    sfh_ceh[:, index-1] *= weight
+                    
+                    # Sum over age and metallicity for the single, exact logU slice
+                    spectrum += np.sum(grid[:, i, logU_ind, :index] * sfh_ceh[i, :index], axis=1)
 
-        for i in range(config.metallicities.shape[0]):
-            if sfh_ceh[i, :index].sum() > 0.:
-                sfh_ceh[:, index-1] *= weight
+                    sfh_ceh[:, index-1] /= weight
 
-                spectrum_low_logU += np.sum(grid[:, i, logU_ind-1, :index]
-                                            * sfh_ceh[i, :index], axis=1)
+        # --- Path 2: Default behavior, logU is between grid points ---
+        else:
+            # This block is identical to the original function
+            if logU == config.logU[0]:
+                logU += 10**-10
 
-                spectrum_high_logU += np.sum(grid[:, i, logU_ind, :index]
-                                             * sfh_ceh[i, :index], axis=1)
+            spectrum_low_logU = np.zeros_like(grid[:, 0, 0, 0])
+            spectrum_high_logU = np.zeros_like(grid[:, 0, 0, 0])
 
-                sfh_ceh[:, index-1] /= weight
+            logU_ind = config.logU[config.logU < logU].shape[0]
+            logU_weight = ((config.logU[logU_ind] - logU) /
+                        (config.logU[logU_ind] - config.logU[logU_ind - 1]))
+            
+            for i in range(config.metallicities.shape[0]):
+                if sfh_ceh[i, :index].sum() > 0.:
+                    sfh_ceh[:, index-1] *= weight
 
-        spectrum = (spectrum_high_logU*(1 - logU_weight)
-                    + spectrum_low_logU*logU_weight)
+                    spectrum_low_logU += np.sum(grid[:, i, logU_ind - 1, :index] *
+                                                sfh_ceh[i, :index], axis=1)
+
+                    spectrum_high_logU += np.sum(grid[:, i, logU_ind, :index] *
+                                                sfh_ceh[i, :index], axis=1)
+
+                    sfh_ceh[:, index-1] /= weight
+
+            spectrum = (spectrum_high_logU * (1 - logU_weight) +
+                        spectrum_low_logU * logU_weight)
 
         return spectrum
+

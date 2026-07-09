@@ -11,7 +11,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='bagpipes',
 
-    version='1.2.0',
+    version='1.3.2',
 
     description='Galaxy spectral fitting',
 
@@ -19,23 +19,23 @@ setup(
 
     url='https://bagpipes.readthedocs.io',
 
-    author='Adam Carnall',
+    author='Adam Carnall, modified by Tom Harvey and Duncan Austin',
 
     author_email='adamc@roe.ac.uk',
 
     packages=["bagpipes", "bagpipes.fitting", "bagpipes.catalogue",
               "bagpipes.models", "bagpipes.filters", "bagpipes.input",
-              "bagpipes.plotting", "bagpipes.models.making", "bagpipes.moons"],
+              "bagpipes.plotting", "bagpipes.making", "bagpipes.moons"],
 
     include_package_data=True,
 
-    install_requires=["numpy", "corner", "pymultinest>=2.11", "h5py", "pandas",
+    install_requires=["numpy<=2.2", "corner", "pymultinest>=2.11", "h5py", "pandas",
                       "astropy", "matplotlib>=2.2.2", "scipy", "msgpack",
                       "spectres", "nautilus-sampler>=1.0.2"],
 
     project_urls={
         "readthedocs": "https://bagpipes.readthedocs.io",
-        "GitHub": "https://github.com/ACCarnall/bagpipes",
+        "GitHub": "https://github.com/tHarvey303/bagpipes",
         "ArXiv": "https://arxiv.org/abs/1712.04452"
     }
 )

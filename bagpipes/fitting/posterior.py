@@ -88,6 +88,8 @@ class posterior(object):
         if self.samples2d.shape[0] < self.n_samples:
             self.n_samples = self.samples2d.shape[0]
 
+        print(f'Generating {self.n_samples} samples from posterior. Total samples: {self.samples2d.shape[0]}')
+
         # Randomly choose points to generate posterior quantities
         self.indices = np.random.choice(self.samples2d.shape[0],
                                         size=self.n_samples, replace=False)
@@ -208,7 +210,7 @@ class posterior(object):
                                          line_ratios_to_save = self.line_ratios_to_save)
         # Moved from above to enusre a model_galaxy is created
             
-        all_names = ["photometry", "spectrum", "spectrum_full", "spectrum_full_cont", "uvj", 'beta_C94', "m_UV", "M_UV", "indices", "burstiness"]
+        all_names = ["photometry", "spectrum", "spectrum_full", "spectrum_full_cont", "uvj", 'beta_C94', "m_UV", "M_UV", "indices", "burstiness", "D4000"]
         for frame in ["rest", "obs"]:
             for property in ["xi_ion_caseB", "ndot_ion_caseB"]:
                 all_names.append(f"{property}_{frame}")
@@ -299,7 +301,7 @@ class posterior(object):
                              lines_to_save = self.lines_to_save,
                              line_ratios_to_save = self.line_ratios_to_save)
 
-        all_names = ["photometry", "spectrum", "spectrum_full", "spectrum_full_cont", "uvj", 'beta_C94', "m_UV", "M_UV", "indices", "burstiness"]
+        all_names = ["photometry", "spectrum", "spectrum_full", "spectrum_full_cont", "uvj", 'beta_C94', "m_UV", "M_UV", "indices", "burstiness", "D4000"]
         for frame in ["rest", "obs"]:
             for property in ["xi_ion_caseB", "ndot_ion_caseB"]:
                 all_names.append(f"{property}_{frame}")

@@ -8,16 +8,7 @@ import warnings
 import h5py
 import contextlib
 
-try:
-    use_bpass = bool(int(os.environ['use_bpass']))
-except KeyError:
-    use_bpass = False
-
-if use_bpass:
-    #print('Setup to use BPASS')
-    from .. import config_bpass as config
-else:
-    from .. import config
+from bagpipes import config
 
 from copy import deepcopy
 
@@ -83,11 +74,10 @@ def _read_multinest_data(filename):
     # '0.148232-104'  -> 1.482320e-105
     # '0.148232E-10'  -> 1.482320e-011
     # '1.148232'      -> 1.48232e+000
-    convert = lambda s: float(re.sub(r'(\d)([\+\-])(\d)', r'\1E\2\3',
-                                     s.decode()))
+    convert = lambda s: float(re.sub(r'(\d)([\+\-])(\d)', r'\1E\2\3', s))
     converters = dict(zip(range(ncolumns), [convert] * ncolumns))
 
-    return np.genfromtxt(filename, converters=converters)
+    return np.genfromtxt(filename, converters=converters, encoding=None)
 
 
 
@@ -301,48 +291,70 @@ class fit(object):
 
                 print("\nCompleted in " + str("%.1f" % runtime) + " seconds.\n")
 
-                # Load MultiNest outputs and save basic quantities to file.
-                if sampler == "multinest":
-                    multinest_fname = self.fname + 'post_equal_weights.dat'
-                    samples2d = _read_multinest_data(multinest_fname)
-                    lnz_line = open(self.fname + "stats.dat").readline().split()
-                    self.results["samples2d"] = samples2d[:, :-1]
-                    self.results["lnlike"] = samples2d[:, -1]
-                    self.results["lnz"] = float(lnz_line[-3])
-                    self.results["lnz_err"] = float(lnz_line[-1])
+            # Load MultiNest outputs and save basic quantities to file.
+            if sampler == "multinest":
+                multinest_fname = self.fname + 'post_equal_weights.dat'
+                samples2d = _read_multinest_data(multinest_fname)
+                # if samples is 1d, print it
+                if len(samples2d.shape) == 1:
+                    print('Probable issue with samples from multinest.')
+                    print(samples2d)
 
-                elif sampler == "nautilus":
-                    samples2d = np.zeros((0, self.fitted_model.ndim))
-                    log_l = np.zeros(0)
-                    while len(samples2d) < self.n_posterior:
-                        result = n_sampler.posterior(equal_weight=True)
-                        samples2d = np.vstack((samples2d, result[0]))
-                        log_l = np.concatenate((log_l, result[2]))
-                    self.results["samples2d"] = samples2d
-                    self.results["lnlike"] = log_l
-                    self.results["lnz"] = n_sampler.log_z
-                    self.results["lnz_err"] = 1.0 / np.sqrt(n_sampler.n_eff)
+                # Check for corrupted MultiNest posterior
+                if (np.all(np.abs(samples2d[:, -1]) < 1e-300)
+                    or np.all(samples2d[:, -1] < -9.9e+99)):
+                    raise RuntimeError("Bagpipes loaded a corrupted Multinest "
+                                       "posterior. This is usually because the "
+                                       "bagpipes likelihood function crashed or"
+                                       " returned  all NaNs or all infs. Common"
+                                       " causes are bad input models/data e.g.,"
+                                       " zero errors, or config.max_redshift "
+                                       "set too low. Once fixed, you will need "
+                                       "to delete the corrupted MultiNest files"
+                                       " in pipes/posterior. There may be more"
+                                       " information in terminal output above.")
+                    
+                lnz_line = open(self.fname + "stats.dat").readline().split()
+                self.results["samples2d"] = samples2d[:, :-1]
+                self.results["lnlike"] = samples2d[:, -1]
+                self.results["lnz"] = float(lnz_line[-3])
+                self.results["lnz_err"] = float(lnz_line[-1])
 
-                self.results["median"] = np.median(samples2d, axis=0)
-                self.results["conf_int"] = np.percentile(self.results["samples2d"], (16, 84), axis=0)
-                
-                fit_instructions = str(self.fit_instructions)
-                try:
-                    use_bpass = bool(int(os.environ['use_bpass']))
-                except KeyError:
-                    use_bpass = False
+            elif sampler == "nautilus":
+                samples2d = np.zeros((0, self.fitted_model.ndim))
+                log_l = np.zeros(0)
+                while len(samples2d) < self.n_posterior:
+                    result = n_sampler.posterior(equal_weight=True)
+                    samples2d = np.vstack((samples2d, result[0]))
+                    log_l = np.concatenate((log_l, result[2]))
+                self.results["samples2d"] = samples2d
+                self.results["lnlike"] = log_l
+                self.results["lnz"] = n_sampler.log_z
+                self.results["lnz_err"] = 1.0 / np.sqrt(n_sampler.n_eff)
+
+            self.results["median"] = np.median(samples2d, axis=0)
+            self.results["conf_int"] = np.percentile(self.results["samples2d"],
+                                                    (16, 84), axis=0)
+            
+            fit_instructions = str(self.fit_instructions)
+            try:
+                use_bpass = bool(int(os.environ['use_bpass']))
+            except KeyError:
+                use_bpass = False
 
                 if use_bpass:
                     #print('Setup to use BPASS')
                     mtype = 'BPASS'
-                    from .. import config_bpass as config
+                    from bagpipes import config_bpass as config
                 else:
-                    from .. import config
+                    from bagpipes import config
                     mtype = 'BC03'
 
+            try:
                 config_dict = str({'stellar_file':config.stellar_file, 'neb_cont_file':config.neb_cont_file, 'neb_line_file':config.neb_line_file, 'type':mtype})
-                
-                os.system("rm " + self.fname + "*")
+            except:
+                config_dict = str({})
+            os.system("rm " + self.fname + "*")
 
         else:
             # load results
@@ -396,8 +408,13 @@ class fit(object):
 
         # This is necessary for converting large arrays to strings
         np.set_printoptions(threshold=10**7)
+        print('Adding config and fit instructions to h5 file.')
         file.attrs["fit_instructions"] = fit_instructions
         file.attrs["config"] = config_dict
+
+        if self.galaxy.filt_list is not None:
+            file.attrs['filt_list'] = list(self.galaxy.filt_list)
+
         np.set_printoptions(threshold=10**4)
 
         for k in self.results.keys():
@@ -414,10 +431,15 @@ class fit(object):
                                 sdata = data[j]
                         else:
                             sdata = data[j]
+
+                        if isinstance(sdata, np.ndarray):
+                            sdata = np.squeeze(sdata)
                         file[k].create_dataset(j, data=sdata, compression="gzip" if type(sdata) is np.ndarray else None) 
             else:
                 data = self.results[k]
                 if k not in file.keys():
+                    if isinstance(data, np.ndarray):
+                        data = np.squeeze(data)
                     file.create_dataset(k, data=data, compression="gzip" if type(data) is np.ndarray else None)
         file.close()
         
@@ -459,6 +481,6 @@ class fit(object):
 
     def plot_calibration(self, show=False, save=True):
         return plotting.plot_calibration(self, show=show, save=save)
-    
+
     def plot_csfh_posterior(self, show=False, save=True):
         return plotting.plot_csfh_posterior(self, show=show, save=save)
