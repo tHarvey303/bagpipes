@@ -25,6 +25,9 @@ except:
 
 from scipy.interpolate import RegularGridInterpolator
 
+# Bump when the mah_grid calculation changes so cached grids are recomputed
+MAH_GRID_VERSION = 2
+
 
 def plot_csfh_posterior(fit, show=False, save=True, colorscheme="bw", zvals=[0, 0.5, 1, 2, 4, 6, 8, 10, 12, 14, 16, 17, 18, 20, 25]):
 
@@ -197,7 +200,7 @@ def add_csfh_posterior(fit, ax, colorscheme="bw", z_axis=True, zorder=4, alpha=0
     age_of_universe = np.interp(redshift, utils.z_array, utils.age_at_z) * factor/(10**-9)
     
     # Convert ages to appropriate time units
-    times = (fit.posterior.sfh.age_of_universe - fit.posterior.sfh.ages) * 10**-9
+    times = (fit.posterior.sfh.age_of_universe - fit.posterior.sfh.ages) * factor
     
     if debug:
         print("Age of Universe at z={}: {} Gyr".format(redshift, age_of_universe))
@@ -208,14 +211,16 @@ def add_csfh_posterior(fit, ax, colorscheme="bw", z_axis=True, zorder=4, alpha=0
     
     # Load or calculate MAH grid
     file = h5py.File(fit.fname[:-1] + ".h5", "a")
-    if 'mah_grid' in file.keys():
+    cached = ('mah_grid' in file.keys()
+              and file['mah_grid'].attrs.get('version', 1) >= MAH_GRID_VERSION)
+    if cached:
         mah_grid = file['mah_grid'][:]
         file.close()
     else:
-        grid = RegularGridInterpolator((config.metallicities, config.age_sampling), 
-                                      fit.posterior.sfh.live_frac_grid, 
-                                      fill_value=0.7, bounds_error=False)
-        
+        # Grids written before version 2 summed over the wrong populations
+        if 'mah_grid' in file.keys():
+            del file['mah_grid']
+
         if debug:
             print('Age of Universe', fit.posterior.sfh.age_of_universe/1e9)
             print('Range of grid:')
@@ -223,10 +228,11 @@ def add_csfh_posterior(fit, ax, colorscheme="bw", z_axis=True, zorder=4, alpha=0
             print('Ages:', np.min(config.age_sampling), np.max(config.age_sampling))
 
         # Use our fixed function
-        mah_grid = optimize_mah_grid_numpy(fit, config, grid)
-        
+        mah_grid = optimize_mah_grid_numpy(fit, config)
+
         # Save result for future use
-        file.create_dataset('mah_grid', data=mah_grid, compression='gzip', dtype=np.float32)
+        dset = file.create_dataset('mah_grid', data=mah_grid, compression='gzip', dtype=np.float32)
+        dset.attrs['version'] = MAH_GRID_VERSION
         file.close()
     
     # Calculate percentiles for plotting
@@ -238,13 +244,13 @@ def add_csfh_posterior(fit, ax, colorscheme="bw", z_axis=True, zorder=4, alpha=0
         ax.plot(times, masses[:, 2], color=color1, zorder=zorder, label=label)
         ax.fill_between(times, masses[:, 1], masses[:, 3], color=color2, alpha=alpha, zorder=zorder)
         ax.fill_between(times, masses[:, 0], masses[:, 4], color=color2, alpha=alpha/2, zorder=zorder)
-        ax.set_xlim(age_of_universe, 0)  # Reverse x-axis to show time flowing forward
+        ax.set_xlim(age_of_universe, 0)  # Observation on the left, Big Bang on the right, as in plot_sfh_posterior
         ax.set_xlabel(f"$\\mathbf{{\\mathrm{{Age\\ of\\ Universe \\ ({timescale})}}}}$", fontsize='medium')
 
     elif plottype == 'lookback':
         # Lookback time (time before observation)
         valid_indices = times >= 0
-        lookback_times = age_of_universe - times_reduced
+        lookback_times = fit.posterior.sfh.ages[valid_indices] * factor
         ax.plot(lookback_times, masses[valid_indices, 2], color=color1, zorder=zorder, label=label)
         ax.fill_between(lookback_times, masses[valid_indices, 1], masses[valid_indices, 3], 
                        color=color2, alpha=alpha, zorder=zorder)
@@ -306,78 +312,57 @@ def optimize_mah_grid_old(fit, config, grid):
 
     return mah_grid
 
-def optimize_mah_grid_numpy(fit, config, grid):
+def optimize_mah_grid_numpy(fit, config, grid=None):
     '''
-    NumPy-optimized implementation of MAH grid calculation.
-    Uses advanced NumPy techniques to minimize loops and maximize performance.
+    Mass assembly history (surviving stellar mass) for every posterior sample.
+
+    sfh.ages is lookback time from the observation, so the mass in place at
+    lookback time ages[i] comes from populations formed earlier (j >= i),
+    each of age ages[j] - ages[i]. Returns an (n_posterior, n_ages) array.
+
+    The live fraction is bilinearly interpolated in (metallicity, age), as
+    RegularGridInterpolator would, but ages outside config.age_sampling are
+    clamped to the edge rather than filled. ``grid`` is ignored and kept only
+    for backwards compatibility.
     '''
     n_posterior = fit.n_posterior
-    n_times = len(fit.posterior.sfh.ages)
-    mah_grid = np.zeros((n_posterior, n_times))
-    
+
     # Ensure consistent sample count
     assert n_posterior == len(fit.posterior.samples["mass_weighted_zmet"]), \
         f"Number of posterior samples does not match the number of mass-weighted metallicities for {fit.galaxy.ID}, " \
         f"{n_posterior} != {len(fit.posterior.samples['mass_weighted_zmet'])}"
 
+    metallicities = np.asarray(config.metallicities)
+    live_frac_grid = fit.posterior.sfh.live_frac_grid
+
     # Constrain metallicities to the valid range in the model
-    mass_weighted_zmet = np.clip(fit.posterior.samples["mass_weighted_zmet"], 
-                                 np.min(config.metallicities), 
-                                 np.max(config.metallicities))
-    
-    # Pre-compute sfh * age_widths for all samples
+    mass_weighted_zmet = np.clip(fit.posterior.samples["mass_weighted_zmet"],
+                                 metallicities.min(), metallicities.max())
+
+    # Mass formed in each age bin, shape (n_posterior, n_ages)
     sfh_weighted = fit.posterior.samples["sfh"] * fit.posterior.sfh.age_widths
-    
-    # Create age difference matrix - shape (n_times, n_times)
-    # Each element [i,j] represents the age of stellar population formed at j when observed at i
+
+    # pop_ages[i, j] = age at lookback time ages[i] of stars formed at ages[j]
     ages = fit.posterior.sfh.ages
-    age_diffs = np.maximum(0, np.subtract.outer(ages, ages))
-    
-    # Create triangular mask for valid indices (where j <= i)
-    mask = np.tril(np.ones((n_times, n_times), dtype=bool))
-    
-    # Build a sparse survival fraction lookup to save memory
-    # This creates a dictionary mapping (metallicity_index, age_index) to survival fraction
-    print("Building survival fraction lookup table...")
-    survival_lookup = {}
-    
-    # Get unique metallicities and ages
-    unique_zmet = np.unique(mass_weighted_zmet)
-    unique_ages = np.unique(age_diffs[mask])
-    
-    # Pre-compute survival fractions for all unique metallicity/age combinations
-    for z_idx, zmet in tqdm(enumerate(unique_zmet)):
-        for a_idx, age in enumerate(unique_ages):
-            survival_lookup[(z_idx, a_idx)] = float(grid((zmet, age)))
-    
-    # Get indices for mapping each metallicity to its position in unique_zmet
-    zmet_indices = np.zeros(n_posterior, dtype=int)
-    for k in tqdm(range(n_posterior)):
-        zmet_indices[k] = np.where(unique_zmet == mass_weighted_zmet[k])[0][0]
-    
-    # Get indices for mapping each age to its position in unique_ages
-    age_indices = np.zeros_like(age_diffs, dtype=int)
-    for a_idx, age in tqdm(enumerate(unique_ages)):
-        age_indices[age_diffs == age] = a_idx
-    
-    print("Computing MAH grid...")
-    # Process each posterior sample
-    for k in tqdm(range(n_posterior)):
-        z_idx = zmet_indices[k]
-        
-        # Create a survival fraction matrix for this metallicity
-        survival_matrix = np.zeros((n_times, n_times))
-        
-        # Fill only the lower triangle (where j <= i)
-        for i in range(n_times):
-            for j in range(i+1):
-                a_idx = age_indices[i, j]
-                survival_matrix[i, j] = survival_lookup[(z_idx, a_idx)]
-        
-        # Calculate MAH for all time steps
-        for i in range(n_times):
-            mah_grid[k, i] = np.sum(sfh_weighted[k, :i+1] * survival_matrix[i, :i+1])
-    
+    pop_ages = ages[np.newaxis, :] - ages[:, np.newaxis]
+    formed = pop_ages >= 0.
+    pop_ages = np.clip(pop_ages, 0., None)
+
+    # Linear interpolation weights between bracketing metallicity nodes
+    z_lo = np.clip(np.searchsorted(metallicities, mass_weighted_zmet) - 1,
+                   0, len(metallicities) - 2)
+    w_hi = ((mass_weighted_zmet - metallicities[z_lo])
+            / (metallicities[z_lo + 1] - metallicities[z_lo]))
+    w_lo = 1. - w_hi
+
+    mah_grid = np.zeros(sfh_weighted.shape)
+    for z in np.unique(np.concatenate([z_lo, z_lo + 1])):
+        weight = w_lo * (z_lo == z) + w_hi * (z_lo + 1 == z)
+        live = np.interp(pop_ages, config.age_sampling, live_frac_grid[z])
+        live *= formed
+        # mah[k, i] = sum_j sfh_weighted[k, j] * live[i, j]
+        mah_grid += weight[:, np.newaxis] * (sfh_weighted @ live.T)
+
     return mah_grid
 
 def optimize_mah_grid1(fit, config, grid):
