@@ -141,7 +141,10 @@ class fit(object):
             fit_info_str = fit_info_str.replace("array", "np.array")
             fit_info_str = fit_info_str.replace("float", "np.float")
             fit_info_str = fit_info_str.replace("np.np.", "np.")
-            self.fit_instructions = eval(fit_info_str)
+            # R_curve (if present) is stored as a numpy array repr; make it evaluable
+            self.fit_instructions = eval(fit_info_str, {"array": np.array, "np": np,
+                                                        "inf": np.inf, "nan": np.nan,
+                                                        "float64": np.float64})
             try:
                 self.config_used = eval(file.attrs["config"])
                 if self.config_used['type'] == 'BPASS':
@@ -484,3 +487,7 @@ class fit(object):
 
     def plot_csfh_posterior(self, show=False, save=True):
         return plotting.plot_csfh_posterior(self, show=show, save=save)
+
+    def plot_summary(self, show=False, save=True, **kwargs):
+        """One-page summary figure (see bagpipes.plotting.plot_summary)."""
+        return plotting.plot_summary(self, show=show, save=save, **kwargs)
