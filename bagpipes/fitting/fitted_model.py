@@ -240,6 +240,7 @@ class fitted_model(object):
             noise_galaxy = types.SimpleNamespace(spectrum=self.galaxy.spectrum[good])
             noise_model_spec = model[good]
         self.n_spec_unmasked = int(np.sum(good))
+        self.spec_good = good
 
         if "noise" in list(self.fit_instructions):
             if self.galaxy.spec_cov is not None:

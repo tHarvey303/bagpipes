@@ -306,7 +306,12 @@ class posterior(object):
             if "noise" in list(self.fitted_model.model_components):
                 type = self.fitted_model.model_components["noise"]["type"]
                 if type.startswith("GP"):
-                    self.samples["noise"][i] = self.fitted_model.noise.mean()
+                    noise_mean = self.fitted_model.noise.mean()
+                    if noise_mean.shape[0] != self.samples["noise"].shape[1]:
+                        full = np.zeros(self.samples["noise"].shape[1])   # masked pixels: no GP term
+                        full[self.fitted_model.spec_good] = noise_mean
+                        noise_mean = full
+                    self.samples["noise"][i] = noise_mean
 
             for q in quantity_names:
                 if q == "spectrum":

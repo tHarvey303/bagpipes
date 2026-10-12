@@ -409,6 +409,7 @@ class fit(object):
         self.results["posterior_indices"] = np.asarray(self.posterior.indices)
         self.results['basic_quantities'] = {i:j for i, j in self.posterior.samples.items() if i in self.posterior.basic_quantity_names}
         # Get quantities
+        self.results['advanced_quantities'] = {}     # (a previous load may have left an h5 group here)
         try:
             # Attempt to add advanced quantities to the .h5 file
             self.posterior.get_advanced_quantities()
