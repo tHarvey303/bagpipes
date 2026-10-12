@@ -56,4 +56,11 @@ class dust_emission(object):
                              config.dust_grid_umin_only[1][:, 0],
                              model, left=0., right=0.)
 
+        # Normalise to unit energy so that dust_flux * spectrum conserves the
+        # absorbed luminosity (ported from upstream 1.3.6; the *_no_norm grids
+        # are not normalised, so without this the IR emission was ~1e-25 too low).
+        norm = np.trapz(spectrum, x=self.wavelengths)
+        if norm > 0.:
+            spectrum = spectrum / norm
+
         return spectrum
