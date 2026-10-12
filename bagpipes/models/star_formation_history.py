@@ -8,6 +8,7 @@ from bagpipes import config
 from .. import plotting, utils
 
 from .chemical_enrichment_history import chemical_enrichment_history
+from . import sfms_prior
 
 
 def lognorm_equations(p, consts):
@@ -350,6 +351,76 @@ class star_formation_history:
         for i in range(1, n_bins+1):
             mask = (self.ages < bin_edges[i-1]) & (self.ages > bin_edges[i])
             sfr[mask] += 10**np.sum(dsfrs[:i-1])
+
+    def sfms(self, sfr, param):
+        """Non-parametric SFH that follows the star-forming main sequence.
+
+        Lookback-time bins (``bin_edges`` in Myr, or ``n_bins`` log-spaced from ``t_first`` Myr to
+        the age of the universe at the sampled redshift minus the age at ``z_max``).  In every bin
+        log SFR = log SFMS(M*(t), z(t)) + ``sfms_offset`` + delta, with delta = L u where u1..uN are
+        standard-normal fit parameters and L the Cholesky factor of the chosen kernel
+        (``kernel``: "white", "exp" [sigma_int, tau_corr in Myr], "ext_regulator" [sigma_reg,
+        tau_eq, tau_in, sigma_dyn, tau_dyn in Myr]).  ``sfms`` names the relation (see
+        models/sfms_prior.py) or gives a custom table dict.  ``return_frac`` converts formed to
+        surviving mass for the SFMS lookup.  Optional quenching: SFR multiplied by
+        exp(-(t_quench - t)/tau_quench) for lookback t < t_quench (Myr).  The seed mass at the
+        start of the oldest bin is solved for so the track integrates to 10**massformed and is
+        added to the oldest bin.  Diagnostics are stored in ``self.sfms_info``.
+        """
+        edges = sfms_prior.lookback_bin_edges(self.age_of_universe, param)   # yr, ascending
+        n = len(edges) - 1
+        widths = np.diff(edges)
+        centres_lb = 0.5*(edges[1:] + edges[:-1])
+        t_c = (self.age_of_universe - centres_lb)/1e9                        # cosmic time, Gyr
+        z_c = sfms_prior.z_at_age(t_c)
+
+        kernel = param.get("kernel", "exp")
+        if kernel == "white":
+            kp = {"sigma_int": float(param.get("sigma_int", 0.3))}
+        elif kernel == "exp":
+            kp = {"sigma_int": float(param.get("sigma_int", 0.3)),
+                  "tau_corr": float(param.get("tau_corr", 100.))}
+        elif kernel == "ext_regulator":
+            kp = {"sigma_reg": float(param.get("sigma_reg", 0.3)),
+                  "tau_eq": float(param.get("tau_eq", 200.)),
+                  "tau_in": float(param.get("tau_in", self.age_of_universe/1e6)),
+                  "sigma_dyn": float(param.get("sigma_dyn", 0.1)),
+                  "tau_dyn": float(param.get("tau_dyn", 10.))}
+        else:
+            raise ValueError("sfms: unknown kernel " + str(kernel))
+
+        u = np.array([float(param.get("u" + str(i), 0.)) for i in range(1, n + 1)])
+        L = sfms_prior.cholesky_factor(kernel, centres_lb/1e6, kp)
+        delta = L @ u                                                        # youngest first
+
+        # Quenching factor on the fine age grid and its mean per bin.
+        qf = np.ones_like(self.ages)
+        t_q = param.get("t_quench", None)
+        if t_q is not None and t_q > 0.:
+            tau_q = float(param.get("tau_quench", 100.))*1e6
+            m = self.ages < t_q*1e6
+            qf[m] = np.exp(-(t_q*1e6 - self.ages[m])/tau_q)
+
+        masks = [(self.ages >= edges[k]) & (self.ages < edges[k + 1]) for k in range(n)]
+        q_bin = np.array([np.sum(qf[mk]*self.age_widths[mk])/np.sum(self.age_widths[mk])
+                          if mk.any() else 1. for mk in masks])
+
+        table = sfms_prior.get_sfms_table(param.get("sfms", "popesso23"))
+        sfr_bins, log_seed, log_m_start, log_ms = sfms_prior.sfms_track(
+            float(param["massformed"]), widths[::-1], z_c[::-1], delta[::-1], table,
+            offset=float(param.get("sfms_offset", 0.)),
+            return_frac=float(param.get("return_frac", 0.3)), quench=q_bin[::-1])
+        sfr_bins = sfr_bins[::-1]                                            # youngest first
+
+        for k in range(n):
+            sfr[masks[k]] = sfr_bins[k]*qf[masks[k]]
+        sfr[self.ages > self.age_of_universe] = 0.
+
+        # All arrays youngest bin first (same order as bin_edges_lb_yr).
+        self.sfms_info = {"bin_edges_lb_yr": edges, "t_cosmic_gyr": t_c, "z_centres": z_c,
+                          "delta": delta, "log_sfr_bins": np.log10(sfr_bins*q_bin),
+                          "log_sfms_bins": log_ms[::-1], "log_mseed": log_seed,
+                          "log_mformed_start": log_m_start[::-1], "quench_factor": q_bin}
 
     def custom(self, sfr, param):
         history = param["history"]
