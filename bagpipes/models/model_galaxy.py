@@ -413,7 +413,8 @@ class model_galaxy(object):
                 grid = self.neb_sfh.ceh.grid
 
             # All stellar emission below 912A goes into nebular emission
-            spectrum_bc[self.wavelengths < 912.] = 0.
+            # Ionising photons: fraction fesc escapes, the rest is reprocessed into nebular emission
+            spectrum_bc[self.wavelengths < 912.] *= model_comp["nebular"].get("fesc", 0.)
             if add_lines:
                 em_lines += self.nebular.line_fluxes(grid, t_bc,
                     model_comp["nebular"]["logU"]) * (1 - model_comp["nebular"].get("fesc", 0))
@@ -952,7 +953,8 @@ class model_galaxy(object):
                 grid = self.neb_sfh.ceh.grid
 
             # All stellar emission below 912A goes into nebular emission
-            spectrum_bc[self.wavelengths < 912.] = 0.
+            # Ionising photons: fraction fesc escapes, the rest is reprocessed into nebular emission
+            spectrum_bc[self.wavelengths < 912.] *= model_comp["nebular"].get("fesc", 0.)
             if add_lines:
                 spectrum_bc += self.nebular.spectrum(grid, t_bc,
                     model_comp["nebular"]["logU"]) * (1 - model_comp["nebular"].get("fesc", 0))

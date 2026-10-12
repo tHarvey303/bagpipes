@@ -355,7 +355,7 @@ def compile_cloudy_grid(path):
                          overwrite=True)
 
 
-def run_cloudy_grid(path=None):
+def run_cloudy_grid(path=None, repeat=False):
     """ Generate the whole grid of cloudy models and save to file. """
 
     if path is None:
@@ -405,8 +405,8 @@ def run_cloudy_grid(path=None):
               + str(np.round(zmet, 4)) + ", age: "
               + str(np.round(age*10**-9, 5)))
 
-        if not os.path.exists(path + "/cloudy_temp_files/logU_" + "%.1f" % logU
-             + "_zmet_" + "%.3f" % zmet + "/" + "%.5f" % (age*10**-9) + ".in"):
+        if repeat or not os.path.exists(path + "/cloudy_temp_files/logU_" + "%.1f" % logU
+                                        + "_zmet_" + "%.3f" % zmet + "/" + "%.5f" % (age*10**-9) + ".in"):
 
             run_cloudy_model(age*10**-9, zmet, logU, path)
 

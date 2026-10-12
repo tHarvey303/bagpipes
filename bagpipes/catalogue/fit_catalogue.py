@@ -451,7 +451,7 @@ class fit_catalogue(object):
     def _setup_catalogue(self):
         """ Set up the initial blank output catalogue. """
 
-        cols = ["#ID"]
+        cols = []
 
         for var in self.vars:
             cols += [var + "_16", var + "_50", var + "_84"]
@@ -464,6 +464,7 @@ class fit_catalogue(object):
         self.cat = pd.DataFrame(np.zeros((self.IDs.shape[0], len(cols))), columns=cols)
 
         self.cat.loc[:, "#ID"] = self.IDs
+        self.cat = self.cat[["#ID"] + cols]
         self.cat.index = self.IDs
 
         if self.redshifts is not None:

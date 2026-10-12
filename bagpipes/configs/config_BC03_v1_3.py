@@ -122,11 +122,13 @@ try:
     logU = np.arange(-4., 0.01, 0.5)
 
     # Grid of line fluxes.
-    line_grid = [fits.open(grid_dir + "/" + neb_line_file)[i].data for
+    line_file = fits.open(grid_dir + "/" + neb_line_file)
+    line_grid = [line_file[i].data for
                  i in range(len(metallicities) * len(logU) + 1)]
 
     # Grid of nebular continuum fluxes.
-    cont_grid = [fits.open(grid_dir + "/" + neb_cont_file)[i].data for
+    cont_file = fits.open(grid_dir + "/" + neb_cont_file)
+    cont_grid = [cont_file[i].data for
                  i in range(len(metallicities) * len(logU) + 1)]
 
 except (IOError, IndexError):
@@ -148,13 +150,13 @@ try:
                           2.37, 2.50, 3.19, 3.90, 4.58])
 
     # Draine + Li (2007) dust emission grids, stored as a FITS HDUList.
-    dust_grid_umin_only = [
-        fits.open(grid_dir + "/dl07_grids_umin_only_no_norm.fits")[i].data for i
-        in range(len(qpah_vals) + 1)]
+    file_umin_only = fits.open(grid_dir + "/dl07_grids_umin_only_no_norm.fits")
+    dust_grid_umin_only = [file_umin_only[i].data
+                           for i in range(len(qpah_vals) + 1)]
 
-    dust_grid_umin_umax = [
-        fits.open(grid_dir + "/dl07_grids_umin_umax_no_norm.fits")[i].data for i
-        in range(len(qpah_vals) + 1)]
+    file_umin_umax = fits.open(grid_dir + "/dl07_grids_umin_umax_no_norm.fits")
+    dust_grid_umin_umax = [file_umin_umax[i].data
+                           for i in range(len(qpah_vals) + 1)]
 
 except IOError:
     print("Failed to load dust emission grids, these should be placed in the"
