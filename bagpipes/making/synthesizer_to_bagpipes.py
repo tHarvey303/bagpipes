@@ -111,14 +111,14 @@ def _write_nebular_fits(grid_name: str, output_dir: Path, grid: Grid, logU_value
                 incident_spec_slice = incident_spec[original_age_idx, i_z, i_logU, :]
                 incident_ergs_a = incident_spec_slice.to('erg/s/Angstrom')
                 ionizing_mask = wav <= 911.8 * unyt.Angstrom
-                input_ionizing_flux = np.trapz(incident_ergs_a[ionizing_mask], x=wav[ionizing_mask])
+                input_ionizing_flux = np.trapezoid(incident_ergs_a[ionizing_mask], x=wav[ionizing_mask])
 
                 current_line_lums = line_lums[original_age_idx, i_z, i_logU, :]
                 total_line_output = np.sum(current_line_lums)
 
                 neb_cont_slice = neb_cont_spec[original_age_idx, i_z, i_logU, :]
                 neb_cont_ergs_a = neb_cont_slice.to('erg/s/Angstrom')
-                total_cont_output = np.trapz(neb_cont_ergs_a, x=wav)
+                total_cont_output = np.trapezoid(neb_cont_ergs_a, x=wav)
 
                 output_ionizing_flux = total_line_output + total_cont_output
                 norm_factor = (input_ionizing_flux / output_ionizing_flux).to('dimensionless').value if output_ionizing_flux > 0 else 0.

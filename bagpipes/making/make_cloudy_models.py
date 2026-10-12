@@ -254,10 +254,10 @@ def extract_cloudy_results(age, zmet, logU, path):
     # Total ionizing flux in the bagpipes model in erg/s
     ionizing_spec = input_spectrum[(input_spectrum[:, 0] <= 911.8), 1]
     ionizing_wavs = input_spectrum[(input_spectrum[:, 0] <= 911.8), 0]
-    pipes_ionizing_flux = np.trapz(ionizing_spec, x=ionizing_wavs)
+    pipes_ionizing_flux = np.trapezoid(ionizing_spec, x=ionizing_wavs)
 
     # Total ionizing flux in the cloudy outputs in erg/s
-    cloudy_ionizing_flux = np.sum(cloudy_lines) + np.trapz(cloudy_cont[:, 1],
+    cloudy_ionizing_flux = np.sum(cloudy_lines) + np.trapezoid(cloudy_cont[:, 1],
                                                            x=cloudy_cont[:, 0])
 
     # Normalise cloudy fluxes to the level of the input bagpipes model
