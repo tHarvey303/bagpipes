@@ -55,7 +55,7 @@ class posterior(object):
             fit_info_str = fit_info_str.replace("array", "np.array")
             fit_info_str = fit_info_str.replace("float", "np.float")
             fit_info_str = fit_info_str.replace("np.np.", "np.")
-            self.fit_instructions = eval(fit_info_str)
+            self.fit_instructions = eval(fit_info_str, {"np": np, "array": np.array, "inf": np.inf, "nan": np.nan})
         except KeyError:
             self.fit_instructions = {}
             #print(file['fit_instructions']['dust']['Av'].keys())
@@ -90,9 +90,25 @@ class posterior(object):
 
         print(f'Generating {self.n_samples} samples from posterior. Total samples: {self.samples2d.shape[0]}')
 
-        # Randomly choose points to generate posterior quantities
-        self.indices = np.random.choice(self.samples2d.shape[0],
-                                        size=self.n_samples, replace=False)
+        adv = file["advanced_quantities"] if "advanced_quantities" in file.keys() else None
+        saved_params = [] if adv is None else [p for p in self.fitted_model.params
+                                               if p in adv.keys() and adv[p].shape[0] == self.n_samples]
+
+        # Choose the samples2d rows used for the posterior quantities.  If the fit saved its draw
+        # indices (or the fitted-parameter samples, from which they can be recovered) reuse them, so
+        # the recomputed basic quantities (sfh, stellar_mass, ...) belong to the same draws as the
+        # saved fitted-parameter and advanced-quantity samples.  Otherwise draw at random.
+        self.indices = None
+        if "posterior_indices" in file.keys() and file["posterior_indices"].shape[0] == self.n_samples:
+            self.indices = np.array(file["posterior_indices"])
+        elif saved_params:
+            self.indices = self._recover_indices(adv, saved_params)
+        if self.indices is None:
+            self.indices = np.random.choice(self.samples2d.shape[0],
+                                            size=self.n_samples, replace=False)
+            indices_known = False
+        else:
+            indices_known = True
 
         self.samples = {}  # Store all posterior samples
 
@@ -107,18 +123,34 @@ class posterior(object):
 
             self.samples[param_name] = self.samples2d[self.indices, i]
 
-        if 'advanced_quantities' in file.keys():
-            advanced_quantities_params = file['advanced_quantities'].keys()
-            for param in advanced_quantities_params:
-                data = file['advanced_quantities'][param][:]
+        if adv is not None:
+            for param in adv.keys():
+                if indices_known and param in self.fitted_model.params:
+                    continue            # keep the float64 values from samples2d (same draws)
+                data = adv[param][:]
                 if len(data) == n_samples:
                     self.samples[param] = data
-        
+
         self.get_basic_quantities()
 
         self.get_dirichlet_tx(dirichlet_comps)
 
         file.close()
+
+    def _recover_indices(self, adv, saved_params):
+        """Find the samples2d rows of the saved (float32) fitted-parameter samples; None if any
+        sample cannot be matched."""
+        cols = [self.fitted_model.params.index(p) for p in saved_params[:3]]
+        a32 = self.samples2d[:, cols].astype(np.float32)
+        lookup = {}
+        for i in range(a32.shape[0]):
+            lookup.setdefault(a32[i].tobytes(), i)
+        saved = np.column_stack([adv[p][:] for p in saved_params[:3]]).astype(np.float32)
+        idx = np.array([lookup.get(saved[k].tobytes(), -1) for k in range(saved.shape[0])])
+        if np.any(idx < 0):
+            print("posterior: could not match the saved samples to samples2d; drawing new samples")
+            return None
+        return idx
 
     def get_dirichlet_tx(self, dirichlet_comps):
         """ Calculate tx vals for any Dirichlet distributed params. """

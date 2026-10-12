@@ -1,6 +1,7 @@
 from __future__ import print_function, division, absolute_import
 
 import numpy as np
+import types
 import time
 
 from copy import deepcopy
@@ -156,6 +157,8 @@ class fitted_model(object):
             self.model_galaxy = model_galaxy(self.model_components,
                                              filt_list=self.galaxy.filt_list,
                                              spec_wavs=self.galaxy.spec_wavs,
+                                             spec_units=self.galaxy.out_units,
+                                             phot_units=self.galaxy.out_units,
                                              index_list=self.galaxy.index_list)
         
         self.model_galaxy.update(self.model_components, extra_model_components = extra_model_components)
@@ -227,15 +230,26 @@ class fitted_model(object):
         # Calculate differences between model and observed spectrum
         diff = (self.galaxy.spectrum[:, 1] - model)
 
+        # Masked pixels (error set to 9.9e99 by galaxy._mask) must not enter the noise model:
+        # each one would add -log(scaling) to the likelihood (and a diagonal term to the GP
+        # log-determinant) and bias the fitted noise scaling low by sqrt(N_unmasked / N_total).
+        good = self.galaxy.spectrum[:, 2] < 1e50
+        if np.all(good):
+            noise_galaxy, noise_model_spec = self.galaxy, model
+        else:
+            noise_galaxy = types.SimpleNamespace(spectrum=self.galaxy.spectrum[good])
+            noise_model_spec = model[good]
+        self.n_spec_unmasked = int(np.sum(good))
+
         if "noise" in list(self.fit_instructions):
             if self.galaxy.spec_cov is not None:
                 raise ValueError("Noise modelling is not currently supported "
                                  "with manually specified covariance matrix.")
 
             self.noise = noise_model(self.model_components["noise"],
-                                     self.galaxy, model)
+                                     noise_galaxy, noise_model_spec)
         else:
-            self.noise = noise_model({}, self.galaxy, model)
+            self.noise = noise_model({}, noise_galaxy, noise_model_spec)
 
         #
         if self.noise.corellated:
@@ -252,11 +266,11 @@ class fitted_model(object):
 
                 return -0.5*self.chisq_spec
 
-            self.chisq_spec = np.sum(self.noise.inv_var*diff**2)
+            self.chisq_spec = np.sum(self.noise.inv_var*diff[good]**2)
 
             if "noise" in list(self.fit_instructions):
                 c_spec = -np.log(self.model_components["noise"]["scaling"])
-                K_spec = self.galaxy.spectrum.shape[0]*c_spec
+                K_spec = self.n_spec_unmasked*c_spec
 
             else:
                 K_spec = 0.

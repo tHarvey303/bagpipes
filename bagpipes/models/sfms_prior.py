@@ -142,14 +142,16 @@ class SFMSTable(object):
 
     def __call__(self, logm, z):
         """log10 SFR for an array of log M* at a single redshift z."""
-        logm = np.clip(np.asarray(logm, dtype=float), self.logm[0], self.logm[-1])
+        logm_in = np.asarray(logm, dtype=float)
+        logm = np.clip(logm_in, self.logm[0], self.logm[-1])
         z = float(np.clip(z, self.z[0], self.z[-1]))
         j = int(np.clip(np.searchsorted(self.z, z) - 1, 0, len(self.z) - 2))
         fz = (z - self.z[j]) / self.dz[j]
         i = np.clip(np.searchsorted(self.logm, logm) - 1, 0, len(self.logm) - 2)
         fm = (logm - self.logm[i]) / self.dlogm[i]
         col = self.table[:, j] * (1. - fz) + self.table[:, j + 1] * fz
-        return col[i] * (1. - fm) + col[i + 1] * fm
+        # Below the tabulated mass range extrapolate at constant sSFR (SFR -> 0 as M -> 0).
+        return col[i] * (1. - fm) + col[i + 1] * fm + np.minimum(logm_in - self.logm[0], 0.)
 
 
 def get_sfms_table(spec):
@@ -230,7 +232,13 @@ def sfms_track(log_mtot, widths_yr, z_centres, delta, table, offset=0., return_f
     lo, hi = target - 14., target
     grid = np.linspace(lo, hi, n_coarse)
     out = integrate(grid)
-    if out[0] >= target:                       # growth alone exceeds the target: smallest seed
+    for _ in range(6):                          # extend the bracket downwards if growth from a
+        if out[0] < target:                     # tiny seed already overshoots the target
+            break
+        hi, lo = lo, lo - 14.
+        grid = np.linspace(lo, hi, n_coarse)
+        out = integrate(grid)
+    if out[0] >= target:
         log_seed = lo
     else:
         j = np.searchsorted(out, target)

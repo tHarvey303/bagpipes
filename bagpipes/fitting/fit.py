@@ -194,6 +194,13 @@ class fit(object):
 
                     file[k].create_dataset(j, data=data[j], compression="gzip" if type(data[j]) is np.ndarray else None)
 
+        # Store the random indices used to draw the posterior samples: a reloaded posterior then
+        # recomputes the basic quantities (sfh, stellar_mass, ...) from the same draws as the saved
+        # fitted-parameter and advanced-quantity samples, instead of mixing two sets of draws.
+        if "posterior_indices" in file.keys():
+            del file["posterior_indices"]
+        file.create_dataset("posterior_indices", data=self.posterior.indices)
+
         file.close()
 
     def fit(self, verbose=False, n_live=400, use_MPI=True,
@@ -339,7 +346,9 @@ class fit(object):
             self.results["conf_int"] = np.percentile(self.results["samples2d"],
                                                     (16, 84), axis=0)
             
+            np.set_printoptions(threshold=10**7)        # arrays (e.g. R_curve) must not be truncated
             fit_instructions = str(self.fit_instructions)
+            np.set_printoptions(threshold=1000)
             try:
                 use_bpass = bool(int(os.environ['use_bpass']))
             except KeyError:
@@ -395,6 +404,9 @@ class fit(object):
         # Create a posterior object to hold the results of the fit.
         self.posterior = posterior(self.galaxy, run=self.run,
                                     n_samples=self.n_posterior)
+        # Save the draw indices so a reloaded posterior reuses the same samples2d rows for the
+        # recomputed basic quantities as for the saved fitted-parameter / advanced samples.
+        self.results["posterior_indices"] = np.asarray(self.posterior.indices)
         self.results['basic_quantities'] = {i:j for i, j in self.posterior.samples.items() if i in self.posterior.basic_quantity_names}
         # Get quantities
         try:

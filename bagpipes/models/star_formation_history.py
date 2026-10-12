@@ -345,6 +345,10 @@ class star_formation_history:
 
     def continuity(self, sfr, param):
         bin_edges = np.array(param["bin_edges"])[::-1]*10**6
+        # Edges are lookback times; clip them to the age of the universe at the (possibly
+        # fitted) redshift, otherwise a bin reaching past the Big Bang flags the model as
+        # unphysical and the likelihood becomes a hard wall just above the input redshift.
+        bin_edges = np.minimum(bin_edges, self.age_of_universe)
         n_bins = len(bin_edges) - 1
         dsfrs = [param["dsfr" + str(i)] for i in range(1, n_bins)]
 
@@ -355,8 +359,9 @@ class star_formation_history:
     def sfms(self, sfr, param):
         """Non-parametric SFH that follows the star-forming main sequence.
 
-        Lookback-time bins (``bin_edges`` in Myr, or ``n_bins`` log-spaced from ``t_first`` Myr to
-        the age of the universe at the sampled redshift minus the age at ``z_max``).  In every bin
+        Lookback-time bins (``bin_edges`` in Myr, or ``n_bins`` bins: [0, t_first] plus n_bins - 1
+        log-spaced bins from ``t_first`` Myr to the age of the universe at the sampled redshift minus
+        the age at ``z_max``).  In every bin
         log SFR = log SFMS(M*(t), z(t)) + ``sfms_offset`` + delta, with delta = L u where u1..uN are
         standard-normal fit parameters and L the Cholesky factor of the chosen kernel
         (``kernel``: "white", "exp" [sigma_int, tau_corr in Myr], "ext_regulator" [sigma_reg,

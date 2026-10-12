@@ -432,6 +432,7 @@ class model_galaxy(object):
 
             # Add extra attenuation to birth clouds.
             eta = 1.
+            bc_Av_reduced = 0.
             if "eta" in list(model_comp["dust"]):
                 eta = model_comp["dust"]["eta"]
                 bc_Av_reduced = (eta - 1.)*model_comp["dust"]["Av"]
@@ -727,8 +728,8 @@ class model_galaxy(object):
         lines = ['Halpha', 'Hbeta', 'Hgamma', 'OIII_5007', 'OIII_4959', 'NII_6548', 'NII_6584'],
         frame = "rest",
     ):
-        if not hasattr(self, f"line_fluxes_dustcorr_{frame}"):
-            self._calculate_dustcorr_em_lines(model_comp, frame = frame)
+        # Always recompute: a cached value would belong to the previous model update.
+        self._calculate_dustcorr_em_lines(model_comp, frame = frame)
         
         line_names = []
         for line in lines:
@@ -881,6 +882,7 @@ class model_galaxy(object):
         
             # Add extra attenuation to birth clouds.
             eta = 1.
+            bc_Av_reduced = 0.
             if "eta" in list(model_comp["dust"]):
                 eta = model_comp["dust"]["eta"]
                 bc_Av_reduced = (eta - 1.)*model_comp["dust"]["Av"]

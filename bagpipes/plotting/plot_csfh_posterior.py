@@ -200,7 +200,7 @@ def add_csfh_posterior(fit, ax, colorscheme="bw", z_axis=True, zorder=4, alpha=0
     age_of_universe = np.interp(redshift, utils.z_array, utils.age_at_z) * factor/(10**-9)
     
     # Convert ages to appropriate time units
-    times = (fit.posterior.sfh.age_of_universe - fit.posterior.sfh.ages) * factor
+    times = age_of_universe - fit.posterior.sfh.ages * factor      # from the median redshift
     
     if debug:
         print("Age of Universe at z={}: {} Gyr".format(redshift, age_of_universe))
