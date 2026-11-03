@@ -142,11 +142,11 @@ try:
                           2.37, 2.50, 3.19, 3.90, 4.58])
 
     # Draine + Li (2007) dust emission grids, stored as a FITS HDUList.
-    file_umin_only = fits.open(grid_dir + "/dl07_grids_umin_only.fits")
+    file_umin_only = fits.open(grid_dir + "/dl07_grids_umin_only_no_norm.fits")
     dust_grid_umin_only = [file_umin_only[i].data
                            for i in range(len(qpah_vals) + 1)]
 
-    file_umin_umax = fits.open(grid_dir + "/dl07_grids_umin_umax.fits")
+    file_umin_umax = fits.open(grid_dir + "/dl07_grids_umin_umax_no_norm.fits")
     dust_grid_umin_umax = [file_umin_umax[i].data
                            for i in range(len(qpah_vals) + 1)]
 

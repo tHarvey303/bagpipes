@@ -240,10 +240,10 @@ try:
     qpah_vals = np.array([0.10, 0.47, 0.75, 1.12, 1.49, 1.77,
                           2.37, 2.50, 3.19, 3.90, 4.58])
     dust_grid_umin_only = [
-        fits.open(os.path.join(grid_dir, "dl07_grids_umin_only.fits"))[i].data for i
+        fits.open(os.path.join(grid_dir, "dl07_grids_umin_only_no_norm.fits"))[i].data for i
         in range(len(qpah_vals) + 1)]
     dust_grid_umin_umax = [
-        fits.open(os.path.join(grid_dir, "dl07_grids_umin_umax.fits"))[i].data for i
+        fits.open(os.path.join(grid_dir, "dl07_grids_umin_umax_no_norm.fits"))[i].data for i
         in range(len(qpah_vals) + 1)]
 except (IOError, FileNotFoundError):
     print("Warning: Default Draine & Li (2007) dust grids not found.")
