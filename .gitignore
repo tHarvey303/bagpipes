@@ -6,6 +6,8 @@ ancillary_code/*
 examples/*
 bagpipes/configs/config_*.py
 !bagpipes/configs/config_BC03.py
+!bagpipes/configs/config_maraston24_Tenc40_kroupa_cloudy.py
+!bagpipes/configs/config_maraston24_Tenc40_m13stitch_kroupa_cloudy.py
 !bagpipes/configs/config_bpass.py
 bagpipes/making/bagpipes_output
 
