@@ -13,6 +13,7 @@ from .prior import dirichlet
 
 
 from .. import utils
+from ..config_utils import apply_recorded_config
 
 
 class posterior(object):
@@ -71,11 +72,7 @@ class posterior(object):
             #self.fit_instructions = file['fit_instructions']
         try:
             self.config_used = eval(file.attrs["config"])
-            if self.config_used['type'] == 'BPASS':
-                os.environ['use_bpass'] = str(int(True))
-                print('Read BPASS from .h5. Attempting to set config, experimental.')
-            elif self.config_used['type'] == 'BC03':
-                os.environ['use_bpass'] = str(int(False))
+            apply_recorded_config(self.config_used)
         except KeyError:
             pass
 

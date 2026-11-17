@@ -3,6 +3,12 @@ import sys
 import os
 import glob
 
+# Configuration used when nothing is requested (also what the legacy
+# use_bpass=0 environment flag selects).
+default_config_name = 'BC03_v1_3'
+_config_module_prefix = 'bagpipes.configs.config_'
+
+
 def set_config(config_name, return_config=False, reload=True):
     """
     Sets a new configuration module.
@@ -206,3 +212,64 @@ def reload_config_from_environment():
             pass
     
     return set_config(config_name, return_config=True, reload=False)
+
+
+def get_config_name(config_module=None):
+    """
+    Name of a configuration module, in the form accepted by set_config
+    (e.g. 'bpass', 'BC03_v1_3'). Defaults to the currently active one.
+    Returns None if no configuration is active.
+    """
+    if config_module is None:
+        config_module = get_current_config()
+    if config_module is None:
+        return None
+    name = getattr(config_module, '__name__', '')
+    if name.startswith(_config_module_prefix):
+        return name[len(_config_module_prefix):]
+    return name
+
+
+def get_config_info(config_module=None):
+    """
+    Dictionary describing a configuration (default: the active one), as
+    stored in the "config" attribute of posterior .h5 files.
+
+    'name' can be passed straight back to set_config. 'type' is kept for
+    backwards compatibility with readers that only know the use_bpass flag
+    ('BPASS' / 'BC03'); for any other configuration it is the config name.
+    """
+    if config_module is None:
+        config_module = get_current_config()
+    name = get_config_name(config_module)
+    if name == 'bpass':
+        mtype = 'BPASS'
+    elif name == default_config_name:
+        mtype = 'BC03'
+    else:
+        mtype = name
+    info = {'name': name, 'type': mtype}
+    for attr in ['stellar_file', 'neb_cont_file', 'neb_line_file']:
+        info[attr] = getattr(config_module, attr, None)
+    return info
+
+
+def apply_recorded_config(config_used):
+    """
+    Activate the configuration recorded in a posterior .h5 file.
+
+    Files written with an explicit config 'name' switch the active
+    configuration to it (if it is not already active). Older files that
+    only carry 'type' fall back to the legacy use_bpass environment flag.
+    """
+    name = config_used.get('name', None)
+    if name is not None:
+        if name != get_config_name():
+            print(f"Posterior was fitted with config '{name}', switching to it.")
+            set_config(name)
+        return
+    mtype = config_used.get('type', None)
+    if mtype == 'BPASS':
+        os.environ['use_bpass'] = str(int(True))
+    elif mtype == 'BC03':
+        os.environ['use_bpass'] = str(int(False))

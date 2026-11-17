@@ -9,6 +9,7 @@ import h5py
 import contextlib
 
 from bagpipes import config
+from ..config_utils import get_config_info, apply_recorded_config
 
 from copy import deepcopy
 
@@ -147,10 +148,7 @@ class fit(object):
                                                         "float64": np.float64})
             try:
                 self.config_used = eval(file.attrs["config"])
-                if self.config_used['type'] == 'BPASS':
-                    os.environ['use_bpass'] = str(int(True))
-                elif self.config_used['type'] == 'BC03':
-                    os.environ['use_bpass'] = str(int(False))
+                apply_recorded_config(self.config_used)
 
             except KeyError:
                 pass
@@ -349,22 +347,11 @@ class fit(object):
             np.set_printoptions(threshold=10**7)        # arrays (e.g. R_curve) must not be truncated
             fit_instructions = str(self.fit_instructions)
             np.set_printoptions(threshold=1000)
+            # Record the configuration that is actually active (set either
+            # with bagpipes.set_config or the legacy use_bpass flag).
             try:
-                use_bpass = bool(int(os.environ['use_bpass']))
-            except KeyError:
-                use_bpass = False
-
-                if use_bpass:
-                    #print('Setup to use BPASS')
-                    mtype = 'BPASS'
-                    from bagpipes import config_bpass as config
-                else:
-                    from bagpipes import config
-                    mtype = 'BC03'
-
-            try:
-                config_dict = str({'stellar_file':config.stellar_file, 'neb_cont_file':config.neb_cont_file, 'neb_line_file':config.neb_line_file, 'type':mtype})
-            except:
+                config_dict = str(get_config_info())
+            except Exception:
                 config_dict = str({})
             os.system("rm " + self.fname + "*")
 

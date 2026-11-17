@@ -11,10 +11,14 @@ from .config_utils import (
     list_available_configs, 
     get_current_config, 
     validate_config,
-    reload_config_from_environment
+    reload_config_from_environment,
+    get_config_name,
+    get_config_info,
+    apply_recorded_config,
+    default_config_name,
 )
 
-config_name = 'BC03_v1_3'
+config_name = default_config_name
 
 try:
     use_bpass = bool(int(os.environ['use_bpass']))
